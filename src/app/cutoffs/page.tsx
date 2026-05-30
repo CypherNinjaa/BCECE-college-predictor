@@ -6,26 +6,69 @@ import { Search } from "lucide-react";
 
 export const revalidate = 3600; // Cache page for 1 hour
 
+interface CutoffRow {
+  id: string;
+  allotmentGroup: string;
+  allottedCat: string;
+  seatType: string;
+  openingRank: number;
+  closingRank: number;
+  totalSeats: number;
+  institute: {
+    id: string;
+    name: string;
+    shortName: string | null;
+    location: string | null;
+  };
+  branch: {
+    id: string;
+    name: string;
+    fullName: string | null;
+  };
+}
+
+interface CollegeItem {
+  id: string;
+  name: string;
+  shortName: string | null;
+}
+
+interface BranchItem {
+  id: string;
+  name: string;
+}
+
 export default async function CutoffsPage() {
-  const [cutoffs, colleges, branches] = await Promise.all([
-    prisma.cutoff.findMany({
-      include: {
-        institute: true,
-        branch: true,
-      },
-      orderBy: [
-        { institute: { name: "asc" } },
-        { branch: { name: "asc" } },
-        { closingRank: "asc" },
-      ],
-    }),
-    prisma.institute.findMany({
-      orderBy: { name: "asc" },
-    }),
-    prisma.branch.findMany({
-      orderBy: { name: "asc" },
-    }),
-  ]);
+  let cutoffs: CutoffRow[] = [];
+  let colleges: CollegeItem[] = [];
+  let branches: BranchItem[] = [];
+
+  try {
+    const [fetchedCutoffs, fetchedColleges, fetchedBranches] = await Promise.all([
+      prisma.cutoff.findMany({
+        include: {
+          institute: true,
+          branch: true,
+        },
+        orderBy: [
+          { institute: { name: "asc" } },
+          { branch: { name: "asc" } },
+          { closingRank: "asc" },
+        ],
+      }),
+      prisma.institute.findMany({
+        orderBy: { name: "asc" },
+      }),
+      prisma.branch.findMany({
+        orderBy: { name: "asc" },
+      }),
+    ]);
+    cutoffs = fetchedCutoffs;
+    colleges = fetchedColleges;
+    branches = fetchedBranches;
+  } catch (err) {
+    console.error("Failed to fetch cutoffs during build:", err);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 relative overflow-hidden">

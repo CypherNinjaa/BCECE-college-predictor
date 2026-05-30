@@ -13,21 +13,26 @@ interface PageProps {
 export default async function CollegeDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const college = await prisma.institute.findUnique({
-    where: { id },
-    include: {
-      cutoffs: {
-        include: {
-          branch: true,
+  let college = null;
+  try {
+    college = await prisma.institute.findUnique({
+      where: { id },
+      include: {
+        cutoffs: {
+          include: {
+            branch: true,
+          },
+          orderBy: [
+            { allotmentGroup: "asc" },
+            { branch: { name: "asc" } },
+            { closingRank: "asc" },
+          ],
         },
-        orderBy: [
-          { allotmentGroup: "asc" },
-          { branch: { name: "asc" } },
-          { closingRank: "asc" },
-        ],
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error("Failed to fetch college details during build:", err);
+  }
 
   if (!college) {
     notFound();

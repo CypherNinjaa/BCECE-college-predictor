@@ -6,20 +6,49 @@ import { Building2, GraduationCap, Users2, CheckCircle2 } from "lucide-react";
 
 export const revalidate = 3600; // Cache page for 1 hour
 
+interface Institute {
+  id: string;
+  name: string;
+  shortName: string | null;
+  location: string | null;
+  type: string | null;
+}
+
+interface Branch {
+  id: string;
+  name: string;
+  fullName: string | null;
+  group: string;
+}
+
 export default async function Home() {
-  // Server-side fetching using Prisma directly
-  const [colleges, branches, collegesCount, branchesCount, allotmentsCount] =
-    await Promise.all([
-      prisma.institute.findMany({
-        orderBy: { name: "asc" },
-      }),
-      prisma.branch.findMany({
-        orderBy: { name: "asc" },
-      }),
-      prisma.institute.count(),
-      prisma.branch.count(),
-      prisma.allotment.count(),
-    ]);
+  let colleges: Institute[] = [];
+  let branches: Branch[] = [];
+  let collegesCount = 0;
+  let branchesCount = 0;
+  let allotmentsCount = 0;
+
+  try {
+    const [fetchedColleges, fetchedBranches, countColleges, countBranches, countAllotments] =
+      await Promise.all([
+        prisma.institute.findMany({
+          orderBy: { name: "asc" },
+        }),
+        prisma.branch.findMany({
+          orderBy: { name: "asc" },
+        }),
+        prisma.institute.count(),
+        prisma.branch.count(),
+        prisma.allotment.count(),
+      ]);
+    colleges = fetchedColleges;
+    branches = fetchedBranches;
+    collegesCount = countColleges;
+    branchesCount = countBranches;
+    allotmentsCount = countAllotments;
+  } catch (error) {
+    console.error("Database query failed during home page prerendering:", error);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 relative overflow-hidden selection:bg-indigo-100 selection:text-indigo-900">

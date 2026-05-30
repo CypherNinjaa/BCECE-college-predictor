@@ -6,15 +6,29 @@ import { Building2 } from "lucide-react";
 
 export const revalidate = 3600; // Cache page for 1 hour
 
+interface CollegeItem {
+  id: string;
+  name: string;
+  shortName: string | null;
+  location: string | null;
+  type: string | null;
+  cutoffs: { id: string }[];
+}
+
 export default async function CollegesPage() {
-  const colleges = await prisma.institute.findMany({
-    include: {
-      cutoffs: {
-        select: { id: true },
+  let colleges: CollegeItem[] = [];
+  try {
+    colleges = await prisma.institute.findMany({
+      include: {
+        cutoffs: {
+          select: { id: true },
+        },
       },
-    },
-    orderBy: { name: "asc" },
-  });
+      orderBy: { name: "asc" },
+    });
+  } catch (err) {
+    console.error("Failed to fetch colleges during build:", err);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 relative overflow-hidden">
