@@ -301,9 +301,8 @@ model Allotment {
   id              String    @id @default(cuid())
   
   // Student Info (anonymized for prediction)
-  subGroup        String    // PCM | PCB | PCMB
-  gender          String    // M | F
-  category        String    // UR | BC | EB | SC | ST
+  subGroup        String    // PCM | PCB | PCMB (Optional: if they do not provide, we query/display all)
+  category        String    // UR | BC | EBC | SC | ST
 
   // Parsed Numeric Ranks (critical for prediction)
   pcmUrRank       Int?
@@ -333,7 +332,7 @@ model Allotment {
 
   createdAt       DateTime  @default(now())
 
-  @@index([allotmentGroup, allottedCat, gender])
+  @@index([allotmentGroup, allottedCat])
   @@index([instituteId, branchId])
   @@index([pcbUrRank])
   @@index([pcmUrRank])
@@ -421,17 +420,17 @@ The predictor works by comparing the student's 2026 rank against the 2025 cutoff
 
 ```
 INPUT:
-  - rank: number (UR rank or category rank)
-  - allotmentGroup: "PCM" | "PCB"
+  - subGroup?: "PCM" | "PCB" | "PCMB" (Optional: if not provided, display results for all groups)
   - category: "UR" | "BC" | "EBC" | "SC" | "ST"
-  - gender: "M" | "F"
+  - rankType: "PCM" | "PCB" (Selected via dropdown)
+  - rankSubCategory: "UR" | "CAT" | "RCG" | "DQ" | "SMQ" (Dropdown matching the selected rankType)
+  - rankValue: number (User entered rank value)
   - (optional) preferredBranches: string[]
   - (optional) preferredInstitutes: string[]
 
 ALGORITHM:
   1. Determine eligible seat types:
-     - Male   → ["GENERAL SEAT"]
-     - Female → ["GENERAL SEAT", "FEMALE SEAT"]
+     - Show all matching seat types ("GENERAL SEAT", "FEMALE SEAT") as gender filter is disabled to ensure equal opportunity and completeness of predictions.
 
   2. Determine eligible allotted categories:
      - UR   → ["UR", "EWS"] (EWS if applicable)
@@ -439,20 +438,20 @@ ALGORITHM:
      - EBC  → ["UR", "EBC"]
      - SC   → ["UR", "SC"]
      - ST   → ["UR", "ST"]
-     Note: Actual eligibility depends on which category the student qualifies for.
-     We simplify: students can be allotted on UR + their own category seat.
+     Note: If rankSubCategory is a special reservation (RCG, DQ, SMQ), add that reservation category to eligible allotted categories.
 
   3. Query cutoffs WHERE:
-     - allotmentGroup = input.allotmentGroup
+     - If subGroup is provided: allotmentGroup = subGroup (PCMB matches both PCM & PCB)
+     - If subGroup is NOT provided: allotmentGroup IN ["PCM", "PCB"]
      - allottedCat IN eligible categories
-     - seatType IN eligible seat types
-     - closingRank >= input.rank (student qualifies)
+     - seatType IN ["GENERAL SEAT", "FEMALE SEAT"]
+     - closingRank >= input.rankValue (comparing against the corresponding cutoff column based on rankType and rankSubCategory)
      - (optional filters for branch/institute)
 
   4. For each matching cutoff, compute a "chance" indicator:
-     - 🟢 HIGH CHANCE:    rank <= openingRank (better than best allotted)
-     - 🟡 MODERATE CHANCE: openingRank < rank <= closingRank (within range)
-     - 🔴 LOW CHANCE:     rank is within 10% above closingRank (marginal)
+     - 🟢 HIGH CHANCE:    rankValue <= openingRank (better than best allotted)
+     - 🟡 MODERATE CHANCE: openingRank < rankValue <= closingRank (within range)
+     - 🔴 LOW CHANCE:     rankValue is within 10% above closingRank (marginal)
 
   5. Sort results by:
      - Chance level (HIGH → MODERATE → LOW)
@@ -469,11 +468,11 @@ ALGORITHM:
 
 | Scenario | Handling |
 |----------|----------|
+| Sub-group not provided | Query and merge cutoffs across both PCM and PCB groups |
 | PCMB student | Query both PCM and PCB cutoffs, merge results |
 | EWS candidate | UR category + EWS allotted_cat seats |
-| RCG/DQ/SMQ/NRI | Separate toggle — only show if user selects these |
+| Special categories (RCG/DQ/SMQ) | Selected from the Rank Sub-category dropdown, automatically matches corresponding ranks in allotment data |
 | No matches | Show "Your rank may not qualify for any seat this year" with nearest cutoffs |
-| Category rank input | Allow entering both UR rank and category rank separately |
 
 ### 5.3 Prediction Confidence Disclaimer
 
@@ -500,11 +499,11 @@ ALGORITHM:
 ```typescript
 // Request Query Params
 interface PredictRequest {
-  rank: number;              // Required: UR rank
-  categoryRank?: number;     // Optional: Category-specific rank
-  allotmentGroup: 'PCM' | 'PCB'; // Required
+  subGroup?: 'PCM' | 'PCB' | 'PCMB'; // Optional: If not provided, query all subgroups
   category: 'UR' | 'BC' | 'EBC' | 'SC' | 'ST'; // Required
-  gender: 'M' | 'F';        // Required
+  rankType: 'PCM' | 'PCB'; // Required dropdown
+  rankSubCategory: 'UR' | 'CAT' | 'RCG' | 'DQ' | 'SMQ'; // Required sub-category dropdown
+  rankValue: number; // Required rank number
   branches?: string[];       // Optional: Filter by branch IDs
   institutes?: string[];     // Optional: Filter by institute IDs
 }
@@ -917,16 +916,17 @@ export const pulseGlow = {
 │                                                      │
 │  ┌─ PREDICTOR FORM (Glass Card) ─────────────────┐   │
 │  │                                                │  │
-│  │  Step 1: Basic Info                            │  │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐      │  │
-│  │  │ Group ▼  │ │ Category▼│ │ Gender ▼ │      │  │
-│  │  │ PCB      │ │ BC       │ │ Male     │      │  │
-│  │  └──────────┘ └──────────┘ └──────────┘      │  │
-│  │                                                │  │
-│  │  Step 2: Enter Your Rank                       │  │
+│  │  Step 1: Student Details                        │  │
 │  │  ┌──────────────────┐ ┌──────────────────┐    │  │
-│  │  │ UR Rank: [1500]  │ │ Cat Rank: [720]  │    │  │
+│  │  │ Sub-Group (Opt)▼ │ │ Category (Req) ▼ │    │  │
+│  │  │ [All / PCM / PCB]│ │ BC               │    │  │
 │  │  └──────────────────┘ └──────────────────┘    │  │
+│  │                                                │  │
+│  │  Step 2: Rank Information                      │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌───────────────┐  │  │
+│  │  │ Rank Type▼│ │ Sub-Cat ▼│ │ Enter Rank    │  │  │
+│  │  │ PCB      │ │ UR       │ │ [ 1500      ] │  │  │
+│  │  └──────────┘ └──────────┘ └───────────────┘  │  │
 │  │                                                │  │
 │  │  Step 3: Preferences (Optional)                │  │
 │  │  ┌──────────────────────────────────────┐     │  │

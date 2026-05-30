@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ──────────────────────────────
+// Core Domain Models
+// ──────────────────────────────
+
+model Institute {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  shortName   String?      // Display-friendly short name
+  location    String?      // City/District
+  type        String?      // Government / Self-Finance
+  createdAt   DateTime     @default(now())
+
+  allotments  Allotment[]
+  cutoffs     Cutoff[]
+
+  @@map("institutes")
+}
+
+model Branch {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  fullName    String?      // Full expanded name
+  group       String       // PCM | PCB | BOTH (for mapping)
+  createdAt   DateTime     @default(now())
+
+  allotments  Allotment[]
+  cutoffs     Cutoff[]
+
+  @@map("branches")
+}
+
+model Allotment {
+  id              String    @id @default(cuid())
+  
+  // Student Info (anonymized for prediction)
+  subGroup        String    // PCM | PCB | PCMB (Optional)
+  category        String    // UR | BC | EBC | SC | ST
+
+  // Parsed Numeric Ranks (critical for prediction)
+  pcmUrRank       Int?
+  pcmCatRank      Int?
+  pcmRcgRank      Int?
+  pcmDqRank       Int?
+  pcmSmqRank      Int?
+  pcbUrRank       Int?
+  pcbCatRank      Int?
+  pcbRcgRank      Int?
+  pcbDqRank       Int?
+  pcbSmqRank      Int?
+
+  // Allotment Details
+  instituteId     String
+  institute       Institute @relation(fields: [instituteId], references: [id])
+  branchId        String
+  branch          Branch    @relation(fields: [branchId], references: [id])
+  allottedCat     String    // UR | BC | EBC | SC | ST | EWS | RCG | DQ | NRI | SMQ
+  seatType        String    // GENERAL SEAT | FEMALE SEAT
+  remark          String?   // Full remark text
+  allotmentGroup  String    // PCM | PCB
+
+  // Source metadata
+  year            Int       @default(2025)
+  round           Int       @default(1)
+
+  createdAt       DateTime  @default(now())
+
+  @@index([allotmentGroup, allottedCat])
+  @@index([instituteId, branchId])
+  @@index([pcbUrRank])
+  @@index([pcmUrRank])
+  @@index([allottedCat, seatType])
+  @@map("allotments")
+}
+
+// ──────────────────────────────
+// Precomputed Cutoff Table
+// (for fast predictor queries)
+// ──────────────────────────────
+
+model Cutoff {
+  id              String    @id @default(cuid())
+  
+  instituteId     String
+  institute       Institute @relation(fields: [instituteId], references: [id])
+  branchId        String
+  branch          Branch    @relation(fields: [branchId], references: [id])
+  allotmentGroup  String    // PCM | PCB
+  allottedCat     String    // UR, BC, EBC, SC, ST, EWS, RCG, DQ, NRI, SMQ
+  seatType        String    // GENERAL SEAT | FEMALE SEAT
+
+  openingRank     Int       // Best (lowest) rank allotted
+  closingRank     Int       // Worst (highest) rank allotted
+  totalSeats      Int       // Count of allotments in this combo
+
+  year            Int       @default(2025)
+  round           Int       @default(1)
+
+  @@unique([instituteId, branchId, allotmentGroup, allottedCat, seatType, year, round])
+  @@index([allotmentGroup, allottedCat, seatType])
+  @@index([closingRank])
+  @@map("cutoffs")
+}
