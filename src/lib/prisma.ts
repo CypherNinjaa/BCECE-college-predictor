@@ -35,7 +35,10 @@ if (typeof window === "undefined") {
     return originalWrite(...args);
   } as typeof process.stdout.write;
 
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL;
   const pool = new Pool({ connectionString });
   const adapter = new PrismaPg(pool);
   
