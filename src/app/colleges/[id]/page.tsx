@@ -31,7 +31,7 @@ export default async function CollegeDetailPage({ params }: PageProps) {
       },
     });
   } catch (err) {
-    console.error("Failed to fetch college details during build:", err);
+    console.warn("Note: Database not reachable during build prerendering. College detail page will revalidate at runtime.");
   }
 
   if (!college) {

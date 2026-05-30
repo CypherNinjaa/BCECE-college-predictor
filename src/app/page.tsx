@@ -47,7 +47,7 @@ export default async function Home() {
     branchesCount = countBranches;
     allotmentsCount = countAllotments;
   } catch (error) {
-    console.error("Database query failed during home page prerendering:", error);
+    console.warn("Note: Database not reachable during build prerendering. Home page will revalidate at runtime.");
   }
 
   return (

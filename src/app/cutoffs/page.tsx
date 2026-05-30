@@ -67,7 +67,7 @@ export default async function CutoffsPage() {
     colleges = fetchedColleges;
     branches = fetchedBranches;
   } catch (err) {
-    console.error("Failed to fetch cutoffs during build:", err);
+    console.warn("Note: Database not reachable during build prerendering. Cutoffs page will revalidate at runtime.");
   }
 
   return (
