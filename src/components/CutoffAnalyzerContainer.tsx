@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, Building, Filter, BookOpen } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, Building, Filter, BookOpen, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 interface CutoffRow {
   id: string;
@@ -41,6 +41,13 @@ export function CutoffAnalyzerContainer({
   const [selectedGroup, setSelectedGroup] = useState("ALL");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedCollege, selectedBranch, selectedGroup, selectedCategory, itemsPerPage]);
+
   // Filter lists
   const categories = Array.from(new Set(initialCutoffs.map((c) => c.allottedCat))).sort();
 
@@ -57,6 +64,44 @@ export function CutoffAnalyzerContainer({
 
     return matchesSearch && matchesCollege && matchesBranch && matchesGroup && matchesCategory;
   });
+
+  const totalPages = Math.ceil(filteredCutoffs.length / itemsPerPage);
+  const paginatedCutoffs = filteredCutoffs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      
+      if (start > 2) {
+        pages.push("ellipsis-start");
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      if (end < totalPages - 1) {
+        pages.push("ellipsis-end");
+      }
+      
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  };
 
   return (
     <div className="space-y-6">
@@ -135,11 +180,30 @@ export function CutoffAnalyzerContainer({
         </div>
       </div>
 
-      {/* Results Count Banner */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-500">
-          Showing <span className="text-slate-800 font-extrabold">{filteredCutoffs.length}</span> entries
+      {/* Results Count & Page Size Banner */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 shadow-sm text-xs text-slate-500">
+        <span className="font-semibold text-center sm:text-left">
+          Showing <span className="text-slate-800 font-extrabold">{filteredCutoffs.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> to{" "}
+          <span className="text-slate-800 font-extrabold">
+            {Math.min(currentPage * itemsPerPage, filteredCutoffs.length)}
+          </span>{" "}
+          of <span className="text-slate-800 font-extrabold">{filteredCutoffs.length}</span> entries
         </span>
+        
+        <div className="flex items-center justify-center gap-2">
+          <span>Show</span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => setItemsPerPage(Number(e.target.value))}
+            className="bg-white border border-slate-200 text-slate-700 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+          >
+            {[10, 25, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {size} entries
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Cutoffs Table Card */}
@@ -158,7 +222,7 @@ export function CutoffAnalyzerContainer({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredCutoffs.map((c) => (
+              {paginatedCutoffs.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
                   {/* College info */}
                   <td className="py-4 px-6">
@@ -219,6 +283,102 @@ export function CutoffAnalyzerContainer({
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-100 rounded-3xl p-4 shadow-sm">
+          <div className="text-xs font-semibold text-slate-500">
+            Page <span className="text-slate-850 font-extrabold">{currentPage}</span> of{" "}
+            <span className="text-slate-850 font-extrabold">{totalPages}</span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {/* First Page */}
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 transition-all ${
+                currentPage === 1
+                  ? "bg-slate-50 text-slate-350 cursor-not-allowed border-slate-100"
+                  : "bg-white text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+              }`}
+              title="First Page"
+            >
+              <ChevronsLeft className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Previous Page */}
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 transition-all ${
+                currentPage === 1
+                  ? "bg-slate-50 text-slate-350 cursor-not-allowed border-slate-100"
+                  : "bg-white text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+              }`}
+              title="Previous Page"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Page Numbers */}
+            {getPageNumbers().map((pageNum, idx) => {
+              if (pageNum === "ellipsis-start" || pageNum === "ellipsis-end") {
+                return (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="w-8 h-8 flex items-center justify-center text-slate-400 select-none text-xs font-semibold"
+                  >
+                    ...
+                  </span>
+                );
+              }
+
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(Number(pageNum))}
+                  className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center border transition-all ${
+                    currentPage === pageNum
+                      ? "bg-indigo-650 border-indigo-650 text-white shadow-md shadow-indigo-100"
+                      : "bg-white border-slate-200 text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            {/* Next Page */}
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 transition-all ${
+                currentPage === totalPages
+                  ? "bg-slate-50 text-slate-350 cursor-not-allowed border-slate-100"
+                  : "bg-white text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+              }`}
+              title="Next Page"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Last Page */}
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 transition-all ${
+                currentPage === totalPages
+                  ? "bg-slate-50 text-slate-350 cursor-not-allowed border-slate-100"
+                  : "bg-white text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+              }`}
+              title="Last Page"
+            >
+              <ChevronsRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
