@@ -46,7 +46,7 @@ export default async function Home() {
     collegesCount = countColleges;
     branchesCount = countBranches;
     allotmentsCount = countAllotments;
-  } catch (error) {
+  } catch {
     console.warn("Note: Database not reachable during build prerendering. Home page will revalidate at runtime.");
   }
 

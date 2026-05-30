@@ -26,7 +26,7 @@ export default async function CollegesPage() {
       },
       orderBy: { name: "asc" },
     });
-  } catch (err) {
+  } catch {
     console.warn("Note: Database not reachable during build prerendering. Colleges page will revalidate at runtime.");
   }
 

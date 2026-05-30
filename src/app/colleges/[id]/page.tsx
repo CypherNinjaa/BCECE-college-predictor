@@ -30,7 +30,7 @@ export default async function CollegeDetailPage({ params }: PageProps) {
         },
       },
     });
-  } catch (err) {
+  } catch {
     console.warn("Note: Database not reachable during build prerendering. College detail page will revalidate at runtime.");
   }
 

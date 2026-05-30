@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Search, Building, Filter, BookOpen, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 interface CutoffRow {
@@ -43,10 +43,6 @@ export function CutoffAnalyzerContainer({
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, selectedCollege, selectedBranch, selectedGroup, selectedCategory, itemsPerPage]);
 
   // Filter lists
   const categories = Array.from(new Set(initialCutoffs.map((c) => c.allottedCat))).sort();
@@ -120,7 +116,10 @@ export function CutoffAnalyzerContainer({
               type="text"
               placeholder="Search college or branch name..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               className="bg-transparent border-none w-full focus:outline-none text-slate-700 font-semibold"
             />
           </div>
@@ -128,7 +127,10 @@ export function CutoffAnalyzerContainer({
           {/* College Filter */}
           <select
             value={selectedCollege}
-            onChange={(e) => setSelectedCollege(e.target.value)}
+            onChange={(e) => {
+              setSelectedCollege(e.target.value);
+              setCurrentPage(1);
+            }}
             className="bg-white border border-slate-200 text-slate-750 py-2.5 px-3.5 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           >
             <option value="ALL">All Colleges</option>
@@ -142,7 +144,10 @@ export function CutoffAnalyzerContainer({
           {/* Branch Filter */}
           <select
             value={selectedBranch}
-            onChange={(e) => setSelectedBranch(e.target.value)}
+            onChange={(e) => {
+              setSelectedBranch(e.target.value);
+              setCurrentPage(1);
+            }}
             className="bg-white border border-slate-200 text-slate-750 py-2.5 px-3.5 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           >
             <option value="ALL">All Branches</option>
@@ -156,7 +161,10 @@ export function CutoffAnalyzerContainer({
           {/* Group Filter */}
           <select
             value={selectedGroup}
-            onChange={(e) => setSelectedGroup(e.target.value)}
+            onChange={(e) => {
+              setSelectedGroup(e.target.value);
+              setCurrentPage(1);
+            }}
             className="bg-white border border-slate-200 text-slate-750 py-2.5 px-3.5 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           >
             <option value="ALL">All Groups</option>
@@ -167,7 +175,10 @@ export function CutoffAnalyzerContainer({
           {/* Category Filter */}
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value);
+              setCurrentPage(1);
+            }}
             className="bg-white border border-slate-200 text-slate-750 py-2.5 px-3.5 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           >
             <option value="ALL">All Categories</option>
@@ -194,8 +205,11 @@ export function CutoffAnalyzerContainer({
           <span>Show</span>
           <select
             value={itemsPerPage}
-            onChange={(e) => setItemsPerPage(Number(e.target.value))}
-            className="bg-white border border-slate-200 text-slate-700 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="bg-white border border-slate-200 text-slate-750 py-1.5 px-2.5 rounded-lg text-[11px] font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           >
             {[10, 25, 50, 100].map((size) => (
               <option key={size} value={size}>
