@@ -3,6 +3,7 @@ import { Inter, Outfit } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import AnimatedFavicon from "@/components/AnimatedFavicon";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -80,6 +81,7 @@ export default function RootLayout({
         )}
       </head>
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900 font-medium pb-16 md:pb-0">
+        <AnimatedFavicon />
         {children}
         <MobileBottomNav />
       </body>
