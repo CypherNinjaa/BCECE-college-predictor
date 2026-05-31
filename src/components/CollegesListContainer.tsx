@@ -108,13 +108,13 @@ export function CollegesListContainer({ colleges }: CollegesListContainerProps) 
                   {college.type}
                 </span>
                 <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-slate-450" />
+                  <MapPin className="w-3 h-3 text-slate-400" />
                   {college.location}
                 </span>
               </div>
 
               {/* College title */}
-              <h3 className="font-display font-bold text-base text-slate-800 line-clamp-2 min-h-12 group-hover:text-indigo-650 transition-colors">
+              <h3 className="font-display font-bold text-base text-slate-800 line-clamp-2 min-h-12 group-hover:text-indigo-600 transition-colors">
                 {college.shortName || college.name}
               </h3>
 
@@ -132,7 +132,7 @@ export function CollegesListContainer({ colleges }: CollegesListContainerProps) 
 
               <Link
                 href={`/colleges/${college.id}`}
-                className="flex items-center gap-1 text-xs font-extrabold text-indigo-600 hover:text-indigo-850 group-hover:translate-x-0.5 transition-all"
+                className="flex items-center gap-1 text-xs font-extrabold text-indigo-600 hover:text-indigo-800 group-hover:translate-x-0.5 transition-all"
               >
                 View Cutoffs
                 <ChevronRight className="w-3.5 h-3.5" />

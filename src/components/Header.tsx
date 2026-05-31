@@ -23,7 +23,7 @@ export function Header() {
             <Award className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <span className="font-display font-bold text-lg leading-tight tracking-tight text-slate-850">
+            <span className="font-display font-bold text-lg leading-tight tracking-tight text-slate-800">
               BCECE <span className="gradient-text">Predictor</span>
             </span>
             <span className="text-[10px] text-slate-500 font-medium tracking-wider uppercase">

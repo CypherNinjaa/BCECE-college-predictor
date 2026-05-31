@@ -67,7 +67,7 @@ export function CollegeDetailContainer({ college, cutoffs }: CollegeDetailContai
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-slate-850 tracking-tight leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-slate-800 tracking-tight leading-tight">
               {college.shortName || college.name}
             </h1>
 
@@ -176,7 +176,7 @@ export function CollegeDetailContainer({ college, cutoffs }: CollegeDetailContai
                     </div>
                   </td>
                   <td className="py-4 px-6 text-center">
-                    <span className="text-xs font-extrabold text-indigo-650 bg-indigo-50 px-2.5 py-0.5 rounded-lg border border-indigo-100/50 uppercase">
+                    <span className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-lg border border-indigo-100/50 uppercase">
                       {c.allotmentGroup}
                     </span>
                   </td>

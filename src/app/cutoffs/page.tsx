@@ -81,11 +81,11 @@ export default async function CutoffsPage() {
         {/* Header Title Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10 pb-6 border-b border-slate-200/60">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-650 shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
               <Search className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-display font-extrabold text-slate-850 tracking-tight leading-tight">
+              <h1 className="text-3xl font-display font-extrabold text-slate-800 tracking-tight leading-tight">
                 Historical Cutoff Analyzer
               </h1>
               <p className="text-sm text-slate-500 font-medium">

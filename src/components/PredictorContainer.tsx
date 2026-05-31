@@ -480,7 +480,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                     className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
                       collegeTypeFilter === tab.value
                         ? "bg-white text-indigo-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-850"
+                        : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
                     {tab.label}

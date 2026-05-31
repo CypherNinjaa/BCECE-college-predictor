@@ -255,13 +255,13 @@ export function CutoffAnalyzerContainer({
                   {/* Branch info */}
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-indigo-550 shrink-0" />
+                      <BookOpen className="w-4 h-4 text-indigo-500 shrink-0" />
                       <span className="text-xs font-bold text-slate-700">{c.branch.name}</span>
                     </div>
                   </td>
                   {/* Group */}
                   <td className="py-4 px-6 text-center">
-                    <span className="text-xs font-extrabold text-indigo-650 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100/50 uppercase">
+                    <span className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100/50 uppercase">
                       {c.allotmentGroup}
                     </span>
                   </td>
@@ -302,8 +302,8 @@ export function CutoffAnalyzerContainer({
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-100 rounded-3xl p-4 shadow-sm">
           <div className="text-xs font-semibold text-slate-500">
-            Page <span className="text-slate-850 font-extrabold">{currentPage}</span> of{" "}
-            <span className="text-slate-850 font-extrabold">{totalPages}</span>
+            Page <span className="text-slate-800 font-extrabold">{currentPage}</span> of{" "}
+            <span className="text-slate-800 font-extrabold">{totalPages}</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -313,8 +313,8 @@ export function CutoffAnalyzerContainer({
               disabled={currentPage === 1}
               className={`w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 transition-all ${
                 currentPage === 1
-                  ? "bg-slate-50 text-slate-350 cursor-not-allowed border-slate-100"
-                  : "bg-white text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+                  ? "bg-slate-50 text-slate-400 cursor-not-allowed border-slate-100"
+                  : "bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
               }`}
               title="First Page"
             >
@@ -327,8 +327,8 @@ export function CutoffAnalyzerContainer({
               disabled={currentPage === 1}
               className={`w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 transition-all ${
                 currentPage === 1
-                  ? "bg-slate-50 text-slate-350 cursor-not-allowed border-slate-100"
-                  : "bg-white text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+                  ? "bg-slate-50 text-slate-400 cursor-not-allowed border-slate-100"
+                  : "bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
               }`}
               title="Previous Page"
             >
@@ -354,8 +354,8 @@ export function CutoffAnalyzerContainer({
                   onClick={() => setCurrentPage(Number(pageNum))}
                   className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center border transition-all ${
                     currentPage === pageNum
-                      ? "bg-indigo-650 border-indigo-650 text-white shadow-md shadow-indigo-100"
-                      : "bg-white border-slate-200 text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+                      ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
                   }`}
                 >
                   {pageNum}
@@ -369,8 +369,8 @@ export function CutoffAnalyzerContainer({
               disabled={currentPage === totalPages}
               className={`w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 transition-all ${
                 currentPage === totalPages
-                  ? "bg-slate-50 text-slate-350 cursor-not-allowed border-slate-100"
-                  : "bg-white text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+                  ? "bg-slate-50 text-slate-400 cursor-not-allowed border-slate-100"
+                  : "bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
               }`}
               title="Next Page"
             >
@@ -383,8 +383,8 @@ export function CutoffAnalyzerContainer({
               disabled={currentPage === totalPages}
               className={`w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 transition-all ${
                 currentPage === totalPages
-                  ? "bg-slate-50 text-slate-350 cursor-not-allowed border-slate-100"
-                  : "bg-white text-slate-650 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+                  ? "bg-slate-50 text-slate-400 cursor-not-allowed border-slate-100"
+                  : "bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
               }`}
               title="Last Page"
             >

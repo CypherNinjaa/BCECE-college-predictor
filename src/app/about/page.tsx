@@ -23,10 +23,10 @@ export default function AboutPage() {
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10 space-y-10">
         {/* Header Title */}
         <div className="text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-650 mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 mx-auto">
             <Info className="w-6 h-6" />
           </div>
-          <h1 className="text-3xl font-display font-extrabold text-slate-850 tracking-tight leading-tight">
+          <h1 className="text-3xl font-display font-extrabold text-slate-800 tracking-tight leading-tight">
             Counseling Guidelines & Predictor Info
           </h1>
           <p className="text-sm text-slate-500 font-medium max-w-xl mx-auto">
@@ -40,26 +40,26 @@ export default function AboutPage() {
             <Scale className="w-5 h-5 text-indigo-500" />
             How Predictions are Calculated
           </h2>
-          <p className="text-slate-650 text-xs sm:text-sm leading-relaxed">
+          <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
             Our prediction algorithm compares your 2026 BCECE entrance rank (PCM/PCB) against historical Round-1 allotment cutoffs (opening and closing ranks) from 2025:
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-semibold">
             <div className="border border-emerald-100 bg-emerald-50/50 p-4 rounded-2xl space-y-2">
               <span className="block text-emerald-800 font-bold">🟢 High Chance</span>
-              <p className="text-slate-550 leading-relaxed font-medium">
+              <p className="text-slate-500 leading-relaxed font-medium">
                 Your rank is equal to or better (lower) than the opening rank for this seat. You are highly likely to qualify.
               </p>
             </div>
             <div className="border border-amber-100 bg-amber-50/50 p-4 rounded-2xl space-y-2">
               <span className="block text-amber-800 font-bold">🟡 Moderate Chance</span>
-              <p className="text-slate-550 leading-relaxed font-medium">
+              <p className="text-slate-500 leading-relaxed font-medium">
                 Your rank falls strictly between the opening and closing ranks of 2025. You have a competitive chance.
               </p>
             </div>
             <div className="border border-rose-100 bg-rose-50/50 p-4 rounded-2xl space-y-2">
               <span className="block text-rose-800 font-bold">🔴 Low Chance</span>
-              <p className="text-slate-550 leading-relaxed font-medium">
+              <p className="text-slate-500 leading-relaxed font-medium">
                 Your rank is slightly above the 2025 closing rank (within 10% tolerance). Qualification is marginal.
               </p>
             </div>
@@ -72,7 +72,7 @@ export default function AboutPage() {
             <Landmark className="w-5 h-5 text-indigo-500" />
             Bihar BCECE Seat Reservation Policy
           </h2>
-          <p className="text-slate-650 text-xs sm:text-sm leading-relaxed">
+          <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
             Bihar Combined Entrance Competitive Examination Board (BCECEB) enforces seat reservations across colleges. All categories can also claim open merit seats (UR) if they qualify on general score:
           </p>
 
@@ -86,7 +86,7 @@ export default function AboutPage() {
               {reservations.map((res, index) => (
                 <div key={index} className="grid grid-cols-3 p-3.5 font-medium text-slate-700">
                   <span className="font-bold text-slate-800">{res.category}</span>
-                  <span className="text-center font-extrabold text-indigo-650">{res.percentage}</span>
+                  <span className="text-center font-extrabold text-indigo-600">{res.percentage}</span>
                   <span className="text-slate-500 text-[11px] leading-relaxed">{res.description}</span>
                 </div>
               ))}
