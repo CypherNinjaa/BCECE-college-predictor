@@ -60,6 +60,29 @@ interface PredictionResult {
   chancePercentage: number;
 }
 
+interface AiRateLimitInfo {
+  allowed?: boolean;
+  remaining?: number;
+  resetAt?: number;
+  rateLimit?: {
+    limit?: number;
+    remaining?: number;
+    resetAt?: number;
+  };
+  error?: string;
+  rateLimited?: boolean;
+}
+
+function formatRateLimitWait(resetAt: number | null) {
+  if (!resetAt) return "about 1 minute";
+
+  const seconds = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? "" : "s"}`;
+
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+}
+
 export function PredictorContainer({ colleges, branches }: PredictorContainerProps) {
   // Form State
   const [subGroup, setSubGroup] = useState<"PCM" | "PCB" | "PCMB">("PCMB");
@@ -93,29 +116,72 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
   const [activeTab, setActiveTab] = useState<"MATCHES" | "AI_COUNSELOR">("MATCHES");
   const [aiRateLimited, setAiRateLimited] = useState<boolean>(false);
   const [aiRateLimitMsg, setAiRateLimitMsg] = useState<string>("");
+  const [aiRateLimitResetAt, setAiRateLimitResetAt] = useState<number | null>(null);
+  const [aiRemainingRequests, setAiRemainingRequests] = useState<number | null>(null);
 
-  // Check AI rate limit status on mount and periodically
+  const setAiLimitBlocked = useCallback((resetAt: number | null, message?: string) => {
+    setAiRateLimited(true);
+    setAiMode(false);
+    setAiRateLimitResetAt(resetAt);
+    setAiRemainingRequests(0);
+    setAiRateLimitMsg(
+      message || `AI advisor limit reached. Please wait ${formatRateLimitWait(resetAt)} and try again.`
+    );
+  }, []);
+
+  const clearAiLimitBlocked = useCallback((remaining?: number | null) => {
+    setAiRateLimited(false);
+    setAiRateLimitMsg("");
+    setAiRateLimitResetAt(null);
+    setAiRemainingRequests(typeof remaining === "number" ? remaining : null);
+  }, []);
+
+  const applyAiRateLimitStatus = useCallback((data: AiRateLimitInfo) => {
+    const rateLimitInfo = data.rateLimit || data;
+    const remaining = typeof rateLimitInfo.remaining === "number" ? rateLimitInfo.remaining : null;
+    const resetAt = typeof rateLimitInfo.resetAt === "number" ? rateLimitInfo.resetAt : null;
+    const isBlocked = data.rateLimited || data.allowed === false || remaining === 0;
+
+    if (isBlocked) {
+      if (resetAt && resetAt <= Date.now()) {
+        clearAiLimitBlocked(remaining);
+        return;
+      }
+
+      setAiLimitBlocked(resetAt, data.error);
+      return;
+    }
+
+    clearAiLimitBlocked(remaining);
+  }, [clearAiLimitBlocked, setAiLimitBlocked]);
+
+  // Check AI rate limit status without consuming the AI request quota.
   const checkAiRateLimit = useCallback(async () => {
     try {
       const res = await fetch("/api/predict/ai");
       const data = await res.json();
-      if (!data.allowed) {
-        setAiRateLimited(true);
-        setAiRateLimitMsg("AI advisor limit reached. Please wait 1 minute and try again.");
-      } else {
-        setAiRateLimited(false);
-        setAiRateLimitMsg("");
-      }
+      applyAiRateLimitStatus(data);
     } catch {
-      // Silently fail — non-critical
+      // Non-critical. The backend still enforces the quota on POST.
     }
-  }, []);
+  }, [applyAiRateLimitStatus]);
 
   useEffect(() => {
-    checkAiRateLimit();
-    const interval = setInterval(checkAiRateLimit, 30000);
-    return () => clearInterval(interval);
+    const timeout = window.setTimeout(checkAiRateLimit, 0);
+    return () => window.clearTimeout(timeout);
   }, [checkAiRateLimit]);
+
+  useEffect(() => {
+    if (!aiRateLimitResetAt) return;
+
+    const delay = Math.max(1000, aiRateLimitResetAt - Date.now() + 500);
+    const timeout = window.setTimeout(() => {
+      clearAiLimitBlocked();
+      checkAiRateLimit();
+    }, delay);
+
+    return () => window.clearTimeout(timeout);
+  }, [aiRateLimitResetAt, checkAiRateLimit, clearAiLimitBlocked]);
 
   // Filter state for results
   const [collegeTypeFilter, setCollegeTypeFilter] = useState<string>("ALL"); // ALL, Government, Self-Finance
@@ -153,7 +219,13 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
         const fetchedPredictions = resData.data.predictions;
         setPredictions(fetchedPredictions);
 
-        if (aiMode && !aiRateLimited) {
+        const aiCooldownActive = aiRateLimitResetAt !== null && aiRateLimitResetAt > Date.now();
+
+        if (aiMode && (aiRateLimited || aiCooldownActive)) {
+          setAiLimitBlocked(aiRateLimitResetAt);
+        }
+
+        if (aiMode && !aiRateLimited && !aiCooldownActive) {
           setAiLoading(true);
           setActiveTab("AI_COUNSELOR");
           try {
@@ -170,12 +242,13 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
               }),
             });
             const aiResData = await aiResponse.json();
-            if (aiResData.success) {
-              setAiResult(aiResData.data);
-            } else if (aiResData.rateLimited) {
-              setAiRateLimited(true);
-              setAiRateLimitMsg(aiResData.error || "AI advisor limit reached. Please wait and try again.");
+
+            if (aiResponse.status === 429 || aiResData.rateLimited) {
+              applyAiRateLimitStatus(aiResData);
               setActiveTab("MATCHES");
+            } else if (aiResData.success) {
+              setAiResult(aiResData.data);
+              applyAiRateLimitStatus(aiResData);
             } else {
               setError(aiResData.error || "Failed to generate AI advice");
             }
@@ -184,8 +257,6 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
             setError("Unable to connect to AI advisor server.");
           } finally {
             setAiLoading(false);
-            // Re-check rate limit after making a request
-            checkAiRateLimit();
           }
         }
       } else {
@@ -516,7 +587,12 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
           <div className="pt-4 border-t border-slate-100">
             <div
               onClick={() => {
-                if (!aiRateLimited) setAiMode(!aiMode);
+                if (aiRateLimited) {
+                  checkAiRateLimit();
+                  return;
+                }
+
+                setAiMode(!aiMode);
               }}
               className={`flex items-center justify-between p-4 rounded-2xl border select-none transition-all duration-300 ${
                 aiRateLimited
@@ -550,7 +626,9 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                   <p className="text-xs text-slate-500 font-semibold leading-relaxed mt-0.5">
                     {aiRateLimited
                       ? aiRateLimitMsg
-                      : "Get AI-powered strategic choice-filling priorities and counseling guidance based on your rank."
+                      : aiRemainingRequests !== null
+                        ? `Get AI-powered strategic guidance. ${aiRemainingRequests} AI request${aiRemainingRequests === 1 ? "" : "s"} left this minute.`
+                        : "Get AI-powered strategic choice-filling priorities and counseling guidance based on your rank."
                     }
                   </p>
                 </div>

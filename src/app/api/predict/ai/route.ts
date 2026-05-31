@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limiter";
+import { rateLimit, rateLimitStatus, type RateLimitResult } from "@/lib/rate-limiter";
 import { Redis } from "@upstash/redis";
 import { z } from "zod";
 import * as fs from "fs";
@@ -34,6 +34,9 @@ const aiPredictRequestSchema = z.object({
   rankValue: z.coerce.number().int().positive(),
   predictions: z.array(z.any()),
 });
+
+const AI_RATE_LIMIT = 3;
+const AI_RATE_WINDOW = "60 s";
 
 // Initialize Redis client from env if available
 const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -75,6 +78,63 @@ function validateBrowserOrigin(request: NextRequest): boolean {
   if (process.env.NODE_ENV === "development") return true;
 
   return false;
+}
+
+function getClientIp(request: NextRequest): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("cf-connecting-ip")?.trim() ||
+    "anonymous"
+  );
+}
+
+function getAiRateLimitIdentifier(request: NextRequest): string {
+  return `ai-predict:${getClientIp(request)}`;
+}
+
+function getRetryAfterSeconds(reset: number): string {
+  return Math.max(1, Math.ceil((reset - Date.now()) / 1000)).toString();
+}
+
+function rateLimitPayload(result: RateLimitResult) {
+  return {
+    limit: result.limit,
+    remaining: result.remaining,
+    resetAt: result.reset,
+  };
+}
+
+function rateLimitHeaders(result: RateLimitResult, includeRetryAfter = false): HeadersInit {
+  const headers: Record<string, string> = {
+    "X-RateLimit-Limit": result.limit.toString(),
+    "X-RateLimit-Remaining": result.remaining.toString(),
+    "X-RateLimit-Reset": result.reset.toString(),
+  };
+
+  if (includeRetryAfter) {
+    headers["Retry-After"] = getRetryAfterSeconds(result.reset);
+  }
+
+  return headers;
+}
+
+function jsonWithRateLimit<T extends Record<string, unknown>>(
+  body: T,
+  result: RateLimitResult,
+  init: { status?: number; retryAfter?: boolean } = {}
+) {
+  return NextResponse.json(
+    {
+      ...body,
+      rateLimit: rateLimitPayload(result),
+    },
+    {
+      status: init.status,
+      headers: rateLimitHeaders(result, init.retryAfter),
+    }
+  );
 }
 
 // Helper: Parse a single CSV line respecting double quotes
@@ -134,18 +194,29 @@ function getLocalFallbackAdvice(
 
 // GET endpoint: Check rate limit status for the client
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
-  const rateLimiterResult = await rateLimit(`ai-predict:${ip}`, 3);
+  const rateLimiterResult = await rateLimitStatus(
+    getAiRateLimitIdentifier(request),
+    AI_RATE_LIMIT,
+    AI_RATE_WINDOW
+  );
 
-  return NextResponse.json({
-    allowed: rateLimiterResult.success,
-    remaining: rateLimiterResult.remaining,
-    resetAt: rateLimiterResult.reset,
-  });
+  return NextResponse.json(
+    {
+      allowed: rateLimiterResult.success,
+      remaining: rateLimiterResult.remaining,
+      resetAt: rateLimiterResult.reset,
+      rateLimit: rateLimitPayload(rateLimiterResult),
+    },
+    {
+      headers: rateLimitHeaders(rateLimiterResult),
+    }
+  );
 }
 
 export async function POST(request: NextRequest) {
   let requestBody: { category?: string; rankType?: string; rankValue?: number; predictions?: PredictionItem[] } | null = null;
+  let requestRateLimit: RateLimitResult | null = null;
+
   try {
     // 0. Browser Origin Validation — reject non-browser API calls
     if (!validateBrowserOrigin(request)) {
@@ -156,18 +227,23 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Rate Limiting Check (Strict limit of 3 requests per minute per IP)
-    const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
-    const rateLimiterResult = await rateLimit(`ai-predict:${ip}`, 3);
+    const rateLimiterResult = await rateLimit(
+      getAiRateLimitIdentifier(request),
+      AI_RATE_LIMIT,
+      AI_RATE_WINDOW
+    );
+    requestRateLimit = rateLimiterResult;
     
     if (!rateLimiterResult.success) {
-      return NextResponse.json(
+      return jsonWithRateLimit(
         { 
           success: false, 
           error: "You have reached the AI advisor limit. Please wait 1 minute before trying again.",
           rateLimited: true,
           resetAt: rateLimiterResult.reset,
         },
-        { status: 429 }
+        rateLimiterResult,
+        { status: 429, retryAfter: true }
       );
     }
 
@@ -177,8 +253,9 @@ export async function POST(request: NextRequest) {
     const result = aiPredictRequestSchema.safeParse(body);
 
     if (!result.success) {
-      return NextResponse.json(
+      return jsonWithRateLimit(
         { success: false, error: "Invalid request parameters", details: result.error.format() },
+        rateLimiterResult,
         { status: 400 }
       );
     }
@@ -198,11 +275,11 @@ export async function POST(request: NextRequest) {
       try {
         const cached = await redis.get(cacheKey);
         if (cached) {
-          return NextResponse.json({
+          return jsonWithRateLimit({
             success: true,
             fromCache: true,
             data: typeof cached === "string" ? JSON.parse(cached) : cached
-          });
+          }, rateLimiterResult);
         }
       } catch (err) {
         console.error("Redis Cache Read Error:", err);
@@ -302,7 +379,7 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       console.warn("GROQ_API_KEY is not defined. Falling back to local advice.");
       const fallbackData = getLocalFallbackAdvice(category, rankType, rankValue, predictions);
-      return NextResponse.json({ success: true, fallback: true, data: fallbackData });
+      return jsonWithRateLimit({ success: true, fallback: true, data: fallbackData }, rateLimiterResult);
     }
 
     // 6. Build LLM prompt payload
@@ -420,10 +497,10 @@ Respond with a JSON object in this EXACT format:
       }
     }
 
-    return NextResponse.json({
+    return jsonWithRateLimit({
       success: true,
       data: normalizedData
-    });
+    }, rateLimiterResult);
 
   } catch (error) {
     console.error("SWR AI Predict API Error:", error);
@@ -436,11 +513,17 @@ Respond with a JSON object in this EXACT format:
         fallbackPayload.rankValue || 100,
         fallbackPayload.predictions || []
       );
-      return NextResponse.json({
+      const fallbackResponse = {
         success: true,
         fallback: true,
         data: fallbackResult,
-      });
+      };
+
+      if (requestRateLimit) {
+        return jsonWithRateLimit(fallbackResponse, requestRateLimit);
+      }
+
+      return NextResponse.json(fallbackResponse);
     } catch {
       return NextResponse.json(
         { success: false, error: "Internal Server Error" },

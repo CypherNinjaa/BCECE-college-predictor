@@ -149,22 +149,22 @@ export default function AnimatedFavicon() {
   // --- Document Title Animation (Marquee when active, flash/alert when inactive) ---
   useEffect(() => {
     let scrollText = "Study With Ritesh | BCECE College Predictor 2026   •   ";
-    let intervalId: any;
-    let flashIntervalId: any;
+    let intervalId: number | undefined;
+    let flashIntervalId: number | undefined;
 
     const startActiveAnimation = () => {
-      clearInterval(flashIntervalId);
-      clearInterval(intervalId);
+      window.clearInterval(flashIntervalId);
+      window.clearInterval(intervalId);
       
-      intervalId = setInterval(() => {
+      intervalId = window.setInterval(() => {
         scrollText = scrollText.substring(1) + scrollText.substring(0, 1);
         document.title = scrollText;
       }, 350);
     };
 
     const startInactiveAnimation = () => {
-      clearInterval(intervalId);
-      clearInterval(flashIntervalId);
+      window.clearInterval(intervalId);
+      window.clearInterval(flashIntervalId);
       
       const messages = [
         "👋 Come back to predict!",
@@ -174,7 +174,7 @@ export default function AnimatedFavicon() {
       let msgIndex = 0;
       
       document.title = messages[0];
-      flashIntervalId = setInterval(() => {
+      flashIntervalId = window.setInterval(() => {
         msgIndex = (msgIndex + 1) % messages.length;
         document.title = messages[msgIndex];
       }, 2500);
@@ -200,8 +200,8 @@ export default function AnimatedFavicon() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(intervalId);
-      clearInterval(flashIntervalId);
+      window.clearInterval(intervalId);
+      window.clearInterval(flashIntervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
@@ -209,4 +209,3 @@ export default function AnimatedFavicon() {
   // This component renders nothing visible
   return null;
 }
-
