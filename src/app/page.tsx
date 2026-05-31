@@ -63,17 +63,17 @@ export default async function Home() {
         <div className="text-center max-w-3xl mx-auto mb-14 space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-indigo-600 bg-indigo-50/80 border border-indigo-100/50">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Updated with BCECE 2025 Counseling Data</span>
+            <span>Bihar government counseling predictor • 100% Free</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-display font-extrabold text-slate-900 tracking-tight leading-[1.1]">
-            Find Your Dream College With <br />
+            Study With Ritesh <br />
             BCECE <span className="gradient-text">Predictor 2026</span>
           </h1>
 
           <p className="text-slate-500 text-base sm:text-lg leading-relaxed font-medium">
-            Enter your 2026 rank and get instant, data-backed predictions for Bihar engineering,
-            nursing, agriculture, and pharmacy colleges based on 2025 cutoff distributions.
+            Enter your rank and get instant, data-backed predictions for Bihar engineering,
+            nursing, agriculture, and pharmacy colleges. Backed by expert guidance from Study With Ritesh.
           </p>
         </div>
 

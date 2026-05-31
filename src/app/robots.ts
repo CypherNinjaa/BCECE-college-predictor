@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: "/api/",
     },
-    sitemap: "https://bcece-college-predictor.vercel.app/sitemap.xml",
+    sitemap: "https://bcececollege-predictor.vercel.app/sitemap.xml",
   };
 }
