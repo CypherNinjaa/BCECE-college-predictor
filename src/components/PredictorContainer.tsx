@@ -118,6 +118,8 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
   const [waitingForApi, setWaitingForApi] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [resultsRoundTab, setResultsRoundTab] = useState<number>(1);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 12;
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -581,6 +583,11 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
   // Filter state for results
   const [collegeTypeFilter, setCollegeTypeFilter] = useState<string>("ALL"); // ALL, Government, Self-Finance
 
+  // Reset pagination page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [resultsRoundTab, collegeTypeFilter]);
+
   const handlePredict = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rankValue || isNaN(Number(rankValue)) || Number(rankValue) <= 0) {
@@ -593,6 +600,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
     setSearched(false);
     setAiResult(null);
     setShowAnimation(true);
+    setCurrentPage(1); // Reset page on new search
     setApiDataReady(false);
     setWaitingForApi(false);
     setActiveTab("MATCHES");
@@ -733,6 +741,12 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
 
   // Filtered Predictions for currently active Round Tab
   const activeRoundPredictions = displayPredictions.filter((p) => p.round === resultsRoundTab);
+
+  // Paginated Predictions
+  const paginatedPredictions = activeRoundPredictions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="w-full">
@@ -1236,78 +1250,154 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {activeRoundPredictions.map((pred, index) => {
-                      return (
-                        <motion.div
-                          key={pred.id}
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: Math.min(index * 0.05, 0.5) }}
-                          className="relative overflow-hidden bg-white border border-slate-200/50 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 hover:border-indigo-200/80 transition-all duration-300 flex flex-col justify-between group"
-                        >
-                          {/* Top interactive gradient accent line */}
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {paginatedPredictions.map((pred, index) => {
+                        return (
+                          <motion.div
+                            key={pred.id}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: Math.min(index * 0.05, 0.5) }}
+                            className="relative overflow-hidden bg-white border border-slate-200/50 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 hover:border-indigo-200/80 transition-all duration-300 flex flex-col justify-between group"
+                          >
+                            {/* Top interactive gradient accent line */}
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
 
-                          <div>
-                            <div className="flex items-center justify-between mb-3">
-                              {/* College Type Badge */}
-                              <div className="flex items-center gap-1.5">
-                                {pred.institute.type === "Government" ? (
-                                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Government
+                            <div>
+                              <div className="flex items-center justify-between mb-3">
+                                {/* College Type Badge */}
+                                <div className="flex items-center gap-1.5">
+                                  {pred.institute.type === "Government" ? (
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                      Government
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                      Self-Finance
+                                    </span>
+                                  )}
+                                  <span className="text-[9px] font-extrabold text-slate-500 bg-slate-50 border border-slate-200/30 px-2 py-0.5 rounded-full uppercase">
+                                    Round {pred.round}
                                   </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                    Self-Finance
-                                  </span>
-                                )}
-                                <span className="text-[9px] font-extrabold text-slate-500 bg-slate-50 border border-slate-200/30 px-2 py-0.5 rounded-full uppercase">
-                                  Round {pred.round}
+                                </div>
+
+                                {/* Category Seat Badge */}
+                                <span className="text-[9px] font-extrabold text-indigo-700 bg-indigo-50/80 border border-indigo-100/80 px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
+                                  {pred.allottedCategory} Seat
                                 </span>
                               </div>
 
-                              {/* Category Seat Badge */}
-                              <span className="text-[9px] font-extrabold text-indigo-700 bg-indigo-50/80 border border-indigo-100/80 px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
-                                {pred.allottedCategory} Seat
-                              </span>
+                              {/* College Title */}
+                              <h4 className="font-display font-extrabold text-sm sm:text-base text-slate-800 line-clamp-2 min-h-10 leading-snug group-hover:text-indigo-600 transition-colors duration-300">
+                                {pred.institute.shortName}
+                              </h4>
+
+                              {/* Location */}
+                              <div className="flex items-center gap-1 mt-1 text-[11px] font-semibold text-slate-400">
+                                <span>{pred.institute.location}</span>
+                              </div>
+
+                              {/* Branch Section */}
+                              <div className="flex items-center gap-2 mt-3 bg-slate-50 border border-slate-100/80 px-3 py-2 rounded-xl">
+                                <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                <span className="text-xs font-bold text-slate-700 truncate">
+                                  {pred.branch.fullName}
+                                </span>
+                              </div>
                             </div>
 
-                            {/* College Title */}
-                            <h4 className="font-display font-extrabold text-sm sm:text-base text-slate-800 line-clamp-2 min-h-10 leading-snug group-hover:text-indigo-600 transition-colors duration-300">
-                              {pred.institute.shortName}
-                            </h4>
+                            {/* Ranks Visual Widgets */}
+                            <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-100/60">
+                              <div className="flex items-center justify-between px-3 py-2 bg-slate-50/50 rounded-xl border border-slate-100 shadow-sm">
+                                <span className="text-[8px] text-slate-400 uppercase tracking-wider font-extrabold">Open</span>
+                                <span className="text-xs font-black text-slate-700">{pred.openingRank}</span>
+                              </div>
+                              <div className="flex items-center justify-between px-3 py-2 bg-indigo-50/20 rounded-xl border border-indigo-100/20 shadow-sm">
+                                <span className="text-[8px] text-indigo-500 uppercase tracking-wider font-extrabold">Close</span>
+                                <span className="text-xs font-black text-indigo-600">{pred.closingRank}</span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
 
-                            {/* Location */}
-                            <div className="flex items-center gap-1 mt-1 text-[11px] font-semibold text-slate-400">
-                              <span>{pred.institute.location}</span>
-                            </div>
+                    {/* Pagination Controls */}
+                    {activeRoundPredictions.length > itemsPerPage && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200/40 mt-8 animate-fade-in">
+                        <div className="text-xs font-extrabold text-slate-400">
+                          Showing <span className="text-slate-700">{Math.min(activeRoundPredictions.length, (currentPage - 1) * itemsPerPage + 1)}</span> to{" "}
+                          <span className="text-slate-700">{Math.min(activeRoundPredictions.length, currentPage * itemsPerPage)}</span> of{" "}
+                          <span className="text-slate-700">{activeRoundPredictions.length}</span> matching colleges
+                        </div>
 
-                            {/* Branch Section */}
-                            <div className="flex items-center gap-2 mt-3 bg-slate-50 border border-slate-100/80 px-3 py-2 rounded-xl">
-                              <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                              <span className="text-xs font-bold text-slate-700 truncate">
-                                {pred.branch.fullName}
-                              </span>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-1 bg-slate-100/60 border border-slate-200/50 p-1 rounded-xl shadow-inner shrink-0 select-none">
+                          <button
+                            type="button"
+                            disabled={currentPage === 1}
+                            onClick={() => {
+                              setCurrentPage((prev) => Math.max(1, prev - 1));
+                              resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all cursor-pointer"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                            </svg>
+                          </button>
 
-                          {/* Ranks Visual Widgets */}
-                          <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-100/60">
-                            <div className="flex items-center justify-between px-3 py-2 bg-slate-50/50 rounded-xl border border-slate-100 shadow-sm">
-                              <span className="text-[8px] text-slate-400 uppercase tracking-wider font-extrabold">Open</span>
-                              <span className="text-xs font-black text-slate-700">{pred.openingRank}</span>
-                            </div>
-                            <div className="flex items-center justify-between px-3 py-2 bg-indigo-50/20 rounded-xl border border-indigo-100/20 shadow-sm">
-                              <span className="text-[8px] text-indigo-500 uppercase tracking-wider font-extrabold">Close</span>
-                              <span className="text-xs font-black text-indigo-600">{pred.closingRank}</span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+                          {Array.from({ length: Math.ceil(activeRoundPredictions.length / itemsPerPage) }).map((_, idx) => {
+                            const pageNum = idx + 1;
+                            const totalPages = Math.ceil(activeRoundPredictions.length / itemsPerPage);
+
+                            if (totalPages > 6 && pageNum !== 1 && pageNum !== totalPages && Math.abs(pageNum - currentPage) > 1) {
+                              if (pageNum === 2 && currentPage > 3) {
+                                return <span key="ellipsis-start" className="px-2 text-slate-400 text-xs font-extrabold">...</span>;
+                              }
+                              if (pageNum === totalPages - 1 && currentPage < totalPages - 2) {
+                                return <span key="ellipsis-end" className="px-2 text-slate-400 text-xs font-extrabold">...</span>;
+                              }
+                              return null;
+                            }
+
+                            return (
+                              <button
+                                key={pageNum}
+                                type="button"
+                                onClick={() => {
+                                  setCurrentPage(pageNum);
+                                  resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                }}
+                                className={`w-8 h-8 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                  currentPage === pageNum
+                                    ? "bg-white text-indigo-600 shadow-sm border border-slate-200/50"
+                                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
+
+                          <button
+                            type="button"
+                            disabled={currentPage === Math.ceil(activeRoundPredictions.length / itemsPerPage)}
+                            onClick={() => {
+                              setCurrentPage((prev) => Math.min(Math.ceil(activeRoundPredictions.length / itemsPerPage), prev + 1));
+                              resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all cursor-pointer"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}
