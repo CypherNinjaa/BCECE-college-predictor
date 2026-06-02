@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search,
   Filter,
@@ -87,17 +87,24 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
   // Form State
   const [subGroup, setSubGroup] = useState<"PCM" | "PCB" | "PCMB">("PCMB");
   const [category, setCategory] = useState<"UR" | "BC" | "EBC" | "SC" | "ST">("UR");
-  const [rankType, setRankType] = useState<"PCM" | "PCB">("PCM");
-  const [rankSubCategory, setRankSubCategory] = useState<"UR" | "CAT" | "RCG" | "DQ" | "SMQ">("UR");
   const [rankValue, setRankValue] = useState<string>("");
   const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   const [selectedColleges, setSelectedColleges] = useState<string[]>([]);
+
+  // Auto-derive rankType from subGroup
+  const rankType: "PCM" | "PCB" = subGroup === "PCB" ? "PCB" : "PCM";
+  // Default rankSubCategory — category-specific rank type
+  const rankSubCategory: "UR" | "CAT" = category === "UR" ? "UR" : "CAT";
 
   // UI Dropdown States
   const [branchSearch, setBranchSearch] = useState("");
   const [collegeSearch, setCollegeSearch] = useState("");
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+
+  // Refs for click-outside dropdown close
+  const branchDropdownRef = useRef<HTMLDivElement>(null);
+  const collegeDropdownRef = useRef<HTMLDivElement>(null);
 
   // Predictions State
   const [loading, setLoading] = useState(false);
@@ -182,6 +189,20 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
 
     return () => window.clearTimeout(timeout);
   }, [aiRateLimitResetAt, checkAiRateLimit, clearAiLimitBlocked]);
+
+  // Click-outside handler for dropdowns
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (branchDropdownRef.current && !branchDropdownRef.current.contains(e.target as Node)) {
+        setShowBranchDropdown(false);
+      }
+      if (collegeDropdownRef.current && !collegeDropdownRef.current.contains(e.target as Node)) {
+        setShowCollegeDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Filter state for results
   const [collegeTypeFilter, setCollegeTypeFilter] = useState<string>("ALL"); // ALL, Government, Self-Finance
@@ -290,10 +311,12 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
     c.name.toLowerCase().includes(collegeSearch.toLowerCase())
   );
 
-  // Filtered Predictions
+  // Filtered Predictions — show only the user's selected category seats
   const displayPredictions = predictions.filter((p) => {
-    if (collegeTypeFilter === "ALL") return true;
-    return p.institute.type === collegeTypeFilter;
+    // Only show seats matching the user's selected social category
+    if (category !== "UR" && p.allottedCategory !== category) return false;
+    if (collegeTypeFilter !== "ALL" && p.institute.type !== collegeTypeFilter) return false;
+    return true;
   });
 
   return (
@@ -376,59 +399,11 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
             </div>
           </div>
 
-          {/* Rank Type & Sub Category & Rank Value */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-slate-100">
-            {/* Rank Type */}
+          {/* Rank Value */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Predicting For Rank Type
-              </label>
-              <div className="grid grid-cols-2 gap-2 bg-slate-100/80 p-1 rounded-xl">
-                {(["PCM", "PCB"] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-                      setRankType(type);
-                      // Reset sub category if invalid
-                    }}
-                    className={`py-2 rounded-lg text-xs font-bold transition-all duration-200 ${
-                      rankType === type
-                        ? "bg-white text-indigo-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    {type} Rank
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Rank Sub Category */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Rank Sub-Category
-              </label>
-              <div className="relative">
-                <select
-                  value={rankSubCategory}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRankSubCategory(e.target.value as "UR" | "CAT" | "RCG" | "DQ" | "SMQ")}
-                  className="w-full bg-white border border-slate-200 text-slate-700 py-2.5 px-3.5 pr-8 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 appearance-none"
-                >
-                  <option value="UR">UR (Unreserved) Rank</option>
-                  <option value="CAT">Category Rank</option>
-                  {category !== "UR" && <option value="RCG">RCG (Reserved Girl) Rank</option>}
-                  <option value="DQ">DQ (Disabled Quota) Rank</option>
-                  <option value="SMQ">SMQ (Servicemen Quota) Rank</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Rank Value */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Enter Your Rank Value
+                Enter Your {subGroup === "PCMB" ? "PCM/PCB" : rankType} {category === "UR" ? "UR" : category} Rank Value
               </label>
               <input
                 type="number"
@@ -439,13 +414,16 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                 min="1"
                 required
               />
+              <p className="text-[11px] text-slate-400 mt-1.5 font-medium">
+                Using <span className="font-bold text-slate-600">{subGroup === "PCMB" ? "PCM/PCB" : rankType} {category === "UR" ? "UR" : category}</span> Rank based on your academic group selection
+              </p>
             </div>
           </div>
 
           {/* Preferred Branches & Colleges (Optional Filters) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
             {/* Preferred Branches */}
-            <div className="relative">
+            <div className="relative" ref={branchDropdownRef}>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Filter by Branches (Optional)
               </label>
@@ -513,7 +491,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
             </div>
 
             {/* Preferred Colleges */}
-            <div className="relative">
+            <div className="relative" ref={collegeDropdownRef}>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Filter by Colleges (Optional)
               </label>
@@ -772,29 +750,6 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {displayPredictions.map((pred, index) => {
-                      const chanceColors = {
-                        HIGH: {
-                          bg: "bg-emerald-50 border-emerald-100",
-                          text: "text-emerald-700",
-                          dot: "bg-emerald-500",
-                          badge: "bg-emerald-500 text-white shadow-emerald-100",
-                        },
-                        MODERATE: {
-                          bg: "bg-amber-50 border-amber-100",
-                          text: "text-amber-700",
-                          dot: "bg-amber-500",
-                          badge: "bg-amber-500 text-white shadow-amber-100",
-                        },
-                        LOW: {
-                          bg: "bg-rose-50 border-rose-100",
-                          text: "text-rose-700",
-                          dot: "bg-rose-500",
-                          badge: "bg-rose-500 text-white shadow-rose-100",
-                        },
-                      };
-
-                      const currentColors = chanceColors[pred.chanceLevel as keyof typeof chanceColors];
-
                       return (
                         <motion.div
                           key={pred.id}
@@ -804,14 +759,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                           className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-300 flex flex-col justify-between"
                         >
                           <div>
-                            <div className="flex items-center justify-between mb-4">
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm ${currentColors.badge}`}
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-                                {pred.chanceLevel} CHANCE ({pred.chancePercentage}%)
-                              </span>
-
+                            <div className="flex items-center justify-end mb-4">
                               <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg uppercase tracking-wider">
                                 {pred.allottedCategory} Seat
                               </span>

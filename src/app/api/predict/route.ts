@@ -25,23 +25,8 @@ export async function POST(request: NextRequest) {
       institutes,
     } = result.data;
 
-    // Determine eligible allotted categories based on candidate category and rank subcategory
-    const eligibleCategories: string[] = ["UR"]; // Everyone can compete for UR seats
-
-    if (category === "BC") {
-      eligibleCategories.push("BC");
-    } else if (category === "EBC") {
-      eligibleCategories.push("EBC");
-    } else if (category === "SC") {
-      eligibleCategories.push("SC");
-    } else if (category === "ST") {
-      eligibleCategories.push("ST");
-    }
-
-    // UR general candidate can compete for EWS
-    if (category === "UR") {
-      eligibleCategories.push("EWS");
-    }
+    // Determine eligible allotted categories — only show the user's selected category seats
+    const eligibleCategories: string[] = [category];
 
     // Add special reservation category if rank subcategory matches it
     if (rankSubCategory === "RCG") {
@@ -68,7 +53,9 @@ export async function POST(request: NextRequest) {
     };
 
     // Base group restrictions
-    if (rankType === "PCM") {
+    if (subGroup === "PCMB") {
+      // PCMB students compete in both PCM and PCB groups without restriction
+    } else if (rankType === "PCM") {
       whereClause.OR = [
         { allotmentGroup: "PCM" },
         {
