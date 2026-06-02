@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import PredictionAnimation from "./PredictionAnimation";
 
 interface Institute {
   id: string;
@@ -111,6 +112,9 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
   const [predictions, setPredictions] = useState<PredictionResult[]>([]);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAnimation, setShowAnimation] = useState(false);
+
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // SWR AI Mode States
   const [aiMode, setAiMode] = useState<boolean>(false);
@@ -216,8 +220,9 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
 
     setError(null);
     setLoading(true);
-    setSearched(true);
+    setSearched(false);
     setAiResult(null);
+    setShowAnimation(false);
     setActiveTab("MATCHES");
 
     try {
@@ -280,11 +285,29 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
             setAiLoading(false);
           }
         }
+
+        // Scroll to results container
+        setTimeout(() => {
+          if (resultsRef.current) {
+            resultsRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }, 100);
+
+        // Show animation
+        setTimeout(() => {
+          setShowAnimation(true);
+        }, 800);
+
       } else {
         setError(resData.error || "Failed to fetch predictions");
+        setShowAnimation(false);
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
+      setShowAnimation(false);
       console.error(err);
     } finally {
       setLoading(false);
@@ -637,13 +660,25 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
       </div>
 
       {/* Predictions Section */}
-      <AnimatePresence>
-        {searched && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
+      <div ref={resultsRef} className="scroll-mt-6 min-h-[200px]">
+        <AnimatePresence mode="wait">
+          {showAnimation && (
+            <PredictionAnimation
+              showAnimation={showAnimation}
+              onAnimationComplete={() => {
+                setShowAnimation(false);
+                setSearched(true);
+              }}
+            />
+          )}
+
+          {searched && !showAnimation && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
             {/* Header + Result Filter */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -923,5 +958,6 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
         )}
       </AnimatePresence>
     </div>
+  </div>
   );
 }
