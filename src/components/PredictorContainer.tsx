@@ -115,6 +115,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
   const [showAnimation, setShowAnimation] = useState(false);
   const [apiDataReady, setApiDataReady] = useState(false);
   const [waitingForApi, setWaitingForApi] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -135,6 +136,350 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
       setWaitingForApi(true);
     }
   }, [apiDataReady]);
+
+  // Scroll to Top visibility logic
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // CSV download function with promotional links
+  const downloadCSV = () => {
+    const activePredictions = predictions.filter((p) => {
+      if (category !== "UR" && p.allottedCategory !== category) return false;
+      if (collegeTypeFilter !== "ALL" && p.institute.type !== collegeTypeFilter) return false;
+      return true;
+    });
+
+    if (activePredictions.length === 0) return;
+
+    const headers = [
+      "S.No.",
+      "Institute Name",
+      "Location",
+      "Type",
+      "Course/Branch",
+      "Allotted Seat Category",
+      "Opening Rank",
+      "Closing Rank"
+    ];
+
+    const rows = activePredictions.map((pred, index) => [
+      index + 1,
+      pred.institute.shortName,
+      pred.institute.location,
+      pred.institute.type,
+      pred.branch.fullName,
+      pred.allottedCategory,
+      pred.openingRank,
+      pred.closingRank
+    ]);
+
+    const csvRows = [
+      `"STUDY WITH RITESH — BCECE Allotment Predictor 2026 Report"`,
+      `"Official Prep Website:","https://studywithritesh.in/"`,
+      `"YouTube Channel:","https://www.youtube.com/@studywithritesh8678"`,
+      `"Telegram Group:","https://t.me/Studywithritesh"`,
+      `"Instagram Profile:","https://www.instagram.com/study_with_ritesh/"`,
+      `""`,
+      `"Academic Group:","${subGroup}"`,
+      `"Social Category:","${category}"`,
+      `"Entered Rank Value:","${rankValue}"`,
+      `""`,
+      headers.join(","),
+      ...rows.map(row => 
+        row.map(value => {
+          const stringVal = String(value).replace(/"/g, '""');
+          return `"${stringVal}"`;
+        }).join(",")
+      )
+    ];
+
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `SWR_BCECE_Predictions_${subGroup}_Rank_${rankValue}_${category}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // PDF report print/download function with promotional branding links
+  const downloadPDF = () => {
+    const activePredictions = predictions.filter((p) => {
+      if (category !== "UR" && p.allottedCategory !== category) return false;
+      if (collegeTypeFilter !== "ALL" && p.institute.type !== collegeTypeFilter) return false;
+      return true;
+    });
+
+    if (activePredictions.length === 0) return;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (!doc) return;
+
+    const dateStr = new Date().toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>BCECE Allotment Report - Study With Ritesh</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              color: #1e293b;
+              padding: 40px;
+              line-height: 1.5;
+            }
+            .header {
+              border-bottom: 2px solid #6366f1;
+              padding-bottom: 20px;
+              margin-bottom: 30px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            .title-section h1 {
+              margin: 0;
+              font-size: 22px;
+              color: #1e1b4b;
+              font-weight: 800;
+            }
+            .title-section p {
+              margin: 4px 0 0 0;
+              font-size: 12px;
+              color: #4f46e5;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .meta-info {
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 16px;
+              margin-bottom: 30px;
+              font-size: 13px;
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+            }
+            .meta-item strong {
+              color: #475569;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 35px;
+              font-size: 12px;
+            }
+            th {
+              background: #4f46e5;
+              color: white;
+              text-align: left;
+              padding: 10px 12px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.02em;
+            }
+            td {
+              padding: 10px 12px;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            tr:nth-child(even) td {
+              background: #f8fafc;
+            }
+            .badge {
+              display: inline-block;
+              padding: 2px 8px;
+              font-weight: 700;
+              font-size: 10px;
+              text-transform: uppercase;
+              border-radius: 12px;
+            }
+            .badge-govt {
+              background: #ecfdf5;
+              color: #065f46;
+              border: 1px solid #a7f3d0;
+            }
+            .badge-sf {
+              background: #fffbeb;
+              color: #92400e;
+              border: 1px solid #fde68a;
+            }
+            .promo-box {
+              background: #eef2ff;
+              border: 1px solid #c7d2fe;
+              border-radius: 16px;
+              padding: 20px;
+              margin-top: 40px;
+              page-break-inside: avoid;
+            }
+            .promo-box h3 {
+              margin: 0 0 10px 0;
+              font-size: 15px;
+              color: #3730a3;
+              font-weight: 800;
+            }
+            .promo-links {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 12px;
+              margin-top: 15px;
+            }
+            .promo-link-item {
+              font-size: 12px;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            }
+            .promo-link-item a {
+              color: #4f46e5;
+              text-decoration: none;
+              font-weight: 700;
+            }
+            .promo-link-item a:hover {
+              text-decoration: underline;
+            }
+            .disclaimer {
+              font-size: 10px;
+              color: #64748b;
+              text-align: center;
+              margin-top: 30px;
+              line-height: 1.4;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
+              .promo-box {
+                border: 1px solid #c7d2fe !important;
+                background-color: #eef2ff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title-section">
+              <h1>Study With Ritesh</h1>
+              <p>BCECE Allotment Predictor Allotments</p>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #64748b;">
+              Report ID: SWR-${Math.floor(100000 + Math.random() * 900000)}<br/>
+              Generated: ${dateStr}
+            </div>
+          </div>
+
+          <div class="meta-info">
+            <div class="meta-item"><strong>Academic Group:</strong> ${subGroup} (${rankType})</div>
+            <div class="meta-item"><strong>Entered Rank:</strong> ${rankValue}</div>
+            <div class="meta-item"><strong>Social Category:</strong> ${category} (${category === "UR" ? "Unreserved" : "Reserved"})</div>
+            <div class="meta-item"><strong>Matching Options:</strong> ${activePredictions.length} colleges found</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 5%">S.No.</th>
+                <th style="width: 45%">Institute</th>
+                <th style="width: 25%">Course / Branch</th>
+                <th style="width: 13%">Type</th>
+                <th style="width: 12%; text-align: right;">Cutoff Ranks</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${activePredictions.map((pred, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>
+                    <strong style="color: #0f172a;">${pred.institute.shortName}</strong><br/>
+                    <span style="color: #64748b; font-size: 10px;">${pred.institute.location}</span>
+                  </td>
+                  <td><span style="font-weight: 600; color: #334155;">${pred.branch.fullName}</span></td>
+                  <td>
+                    <span class="badge ${pred.institute.type === "Government" ? "badge-govt" : "badge-sf"}">
+                      ${pred.institute.type}
+                    </span>
+                  </td>
+                  <td style="text-align: right; font-family: monospace; font-size: 11px; font-weight: bold;">
+                    ${pred.openingRank} - ${pred.closingRank}
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+
+          <div class="promo-box">
+            <h3>🚀 Prepare for BCECE with Study With Ritesh!</h3>
+            <p style="margin: 0 0 10px 0; font-size: 12px; color: #475569; font-weight: 500;">
+              Get official notifications, free prep materials, and expert guidance directly from Ritesh Sir.
+            </p>
+            <div class="promo-links">
+              <div class="promo-link-item">
+                🌐 <strong>Website:</strong>&nbsp;<a href="https://studywithritesh.in/" target="_blank">studywithritesh.in</a>
+              </div>
+              <div class="promo-link-item">
+                📺 <strong>YouTube:</strong>&nbsp;<a href="https://www.youtube.com/@studywithritesh8678" target="_blank">Study With Ritesh</a>
+              </div>
+              <div class="promo-link-item">
+                📢 <strong>Telegram:</strong>&nbsp;<a href="https://t.me/Studywithritesh" target="_blank">t.me/Studywithritesh</a>
+              </div>
+              <div class="promo-link-item">
+                📸 <strong>Instagram:</strong>&nbsp;<a href="https://www.instagram.com/study_with_ritesh/" target="_blank">@study_with_ritesh</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="disclaimer">
+            <strong>Disclaimer:</strong> Predictions are based on official BCECE 2025 Round 1 allotment cutoff data. Actual 2026 counseling outcomes may vary depending on guidelines, candidate preferences, and policies of the BCECE Board.
+          </div>
+        </body>
+      </html>
+    `;
+
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }, 500);
+  };
 
   // SWR AI Mode States
   const [aiMode, setAiMode] = useState<boolean>(false);
@@ -699,7 +1044,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
               className="space-y-6"
             >
             {/* Header + Result Filter */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <h3 className="font-display font-bold text-2xl text-slate-800">
                   {activeTab === "MATCHES" ? "Prediction Allotments" : "Study With Ritesh AI Guide"}
@@ -711,28 +1056,56 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                 </p>
               </div>
 
-              {/* College Type Filter Tab (Matches Only) */}
-              {activeTab === "MATCHES" && (
-                <div className="flex bg-slate-100/80 border border-slate-200/50 p-1 rounded-xl">
-                  {[
-                    { value: "ALL", label: "All" },
-                    { value: "Government", label: "Govt Only" },
-                    { value: "Self-Finance", label: "Self-Finance" },
-                  ].map((tab) => (
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                {activeTab === "MATCHES" && displayPredictions.length > 0 && (
+                  <div className="flex items-center gap-2">
                     <button
-                      key={tab.value}
-                      onClick={() => setCollegeTypeFilter(tab.value)}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
-                        collegeTypeFilter === tab.value
-                          ? "bg-white text-indigo-600 shadow-sm"
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
+                      onClick={downloadPDF}
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-red-50 border border-red-100 text-red-700 hover:bg-red-100 hover:text-red-800 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                      title="Download prediction results as PDF"
                     >
-                      {tab.label}
+                      <svg className="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                      Download PDF
                     </button>
-                  ))}
-                </div>
-              )}
+
+                    <button
+                      onClick={downloadCSV}
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 border border-indigo-100 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                      title="Download prediction results as Excel/CSV"
+                    >
+                      <svg className="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                      </svg>
+                      Download CSV
+                    </button>
+                  </div>
+                )}
+
+                {/* College Type Filter Tab (Matches Only) */}
+                {activeTab === "MATCHES" && (
+                  <div className="flex bg-slate-100/80 border border-slate-200/50 p-1 rounded-xl shadow-inner">
+                    {[
+                      { value: "ALL", label: "All" },
+                      { value: "Government", label: "Govt Only" },
+                      { value: "Self-Finance", label: "Self-Finance" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.value}
+                        onClick={() => setCollegeTypeFilter(tab.value)}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                          collegeTypeFilter === tab.value
+                            ? "bg-white text-indigo-600 shadow-sm"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Main Tabs Selection (AI Mode Only) */}
@@ -810,75 +1183,59 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                           initial={{ opacity: 0, y: 15 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: Math.min(index * 0.05, 0.5) }}
-                          className="relative overflow-hidden bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1 hover:border-indigo-200/80 transition-all duration-300 flex flex-col justify-between group"
+                          className="relative overflow-hidden bg-white border border-slate-200/50 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 hover:border-indigo-200/80 transition-all duration-300 flex flex-col justify-between group"
                         >
                           {/* Top interactive gradient accent line */}
                           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
 
                           <div>
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-3">
                               {/* College Type Badge */}
                               {pred.institute.type === "Government" ? (
-                                <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-100/60 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                   Government
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-100/60 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
                                   Self-Finance
                                 </span>
                               )}
 
                               {/* Category Seat Badge */}
-                              <span className="text-[9px] font-extrabold text-indigo-700 bg-indigo-50/80 border border-indigo-100/80 px-2.5 py-1 rounded-full uppercase tracking-widest shadow-sm">
+                              <span className="text-[9px] font-extrabold text-indigo-700 bg-indigo-50/80 border border-indigo-100/80 px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
                                 {pred.allottedCategory} Seat
                               </span>
                             </div>
 
                             {/* College Title */}
-                            <h4 className="font-display font-extrabold text-base sm:text-lg text-slate-800 line-clamp-2 min-h-12 leading-snug group-hover:text-indigo-600 transition-colors duration-300">
+                            <h4 className="font-display font-extrabold text-sm sm:text-base text-slate-800 line-clamp-2 min-h-10 leading-snug group-hover:text-indigo-600 transition-colors duration-300">
                               {pred.institute.shortName}
                             </h4>
 
                             {/* Location */}
-                            <div className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-slate-500">
-                              <Building2 className="w-3.5 h-3.5 text-indigo-500/80 shrink-0" />
+                            <div className="flex items-center gap-1 mt-1 text-[11px] font-semibold text-slate-400">
                               <span>{pred.institute.location}</span>
                             </div>
 
                             {/* Branch Section */}
-                            <div className="flex items-center gap-3 mt-4 bg-gradient-to-r from-indigo-50/50 to-purple-50/20 border-l-4 border-indigo-500 p-3 rounded-r-2xl shadow-sm">
-                              <div className="w-8 h-8 rounded-xl bg-white border border-indigo-100/50 flex items-center justify-center text-indigo-600 shrink-0 shadow-sm">
-                                <BookOpen className="w-4 h-4" />
-                              </div>
-                              <div className="min-w-0">
-                                <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-widest">
-                                  Course / Branch
-                                </span>
-                                <span className="text-xs font-extrabold text-slate-700 truncate block">
-                                  {pred.branch.fullName}
-                                </span>
-                              </div>
+                            <div className="flex items-center gap-2 mt-3 bg-slate-50 border border-slate-100/80 px-3 py-2 rounded-xl">
+                              <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                              <span className="text-xs font-bold text-slate-700 truncate">
+                                {pred.branch.fullName}
+                              </span>
                             </div>
                           </div>
 
                           {/* Ranks Visual Widgets */}
-                          <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-100/80">
-                            <div className="bg-gradient-to-b from-slate-50 to-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm hover:border-indigo-100/60 transition-all duration-300">
-                              <span className="block text-[8px] text-slate-400 uppercase tracking-widest font-extrabold mb-1">
-                                Opening Rank
-                              </span>
-                              <span className="text-base font-black text-slate-700 group-hover:text-indigo-600 transition-colors">
-                                {pred.openingRank}
-                              </span>
+                          <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-100/60">
+                            <div className="flex items-center justify-between px-3 py-2 bg-slate-50/50 rounded-xl border border-slate-100 shadow-sm">
+                              <span className="text-[8px] text-slate-400 uppercase tracking-wider font-extrabold">Open</span>
+                              <span className="text-xs font-black text-slate-700">{pred.openingRank}</span>
                             </div>
-                            <div className="bg-gradient-to-b from-indigo-50/30 to-white rounded-2xl p-3 text-center border border-indigo-100/40 shadow-sm hover:border-indigo-200 transition-all duration-300">
-                              <span className="block text-[8px] text-indigo-500 uppercase tracking-widest font-extrabold mb-1">
-                                Closing Rank
-                              </span>
-                              <span className="text-base font-black text-indigo-600">
-                                {pred.closingRank}
-                              </span>
+                            <div className="flex items-center justify-between px-3 py-2 bg-indigo-50/20 rounded-xl border border-indigo-100/20 shadow-sm">
+                              <span className="text-[8px] text-indigo-500 uppercase tracking-wider font-extrabold">Close</span>
+                              <span className="text-xs font-black text-indigo-600">{pred.closingRank}</span>
                             </div>
                           </div>
                         </motion.div>
@@ -1001,6 +1358,29 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Scroll to Top Arrow */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-20 md:bottom-8 right-6 z-50 p-3.5 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 hover:scale-110 active:scale-95 transition-all duration-200 group border border-indigo-500/20 cursor-pointer"
+          aria-label="Scroll to Top"
+        >
+          <svg
+            className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform duration-200"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.5"
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   </div>
   );
