@@ -810,48 +810,73 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                           initial={{ opacity: 0, y: 15 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: Math.min(index * 0.05, 0.5) }}
-                          className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-300 flex flex-col justify-between"
+                          className="relative overflow-hidden bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1 hover:border-indigo-200/80 transition-all duration-300 flex flex-col justify-between group"
                         >
+                          {/* Top interactive gradient accent line */}
+                          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+
                           <div>
-                            <div className="flex items-center justify-end mb-4">
-                              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                            <div className="flex items-center justify-between mb-4">
+                              {/* College Type Badge */}
+                              {pred.institute.type === "Government" ? (
+                                <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-100/60 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  Government
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-100/60 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                  Self-Finance
+                                </span>
+                              )}
+
+                              {/* Category Seat Badge */}
+                              <span className="text-[9px] font-extrabold text-indigo-700 bg-indigo-50/80 border border-indigo-100/80 px-2.5 py-1 rounded-full uppercase tracking-widest shadow-sm">
                                 {pred.allottedCategory} Seat
                               </span>
                             </div>
 
-                            <h4 className="font-display font-bold text-base text-slate-800 line-clamp-2 min-h-12">
+                            {/* College Title */}
+                            <h4 className="font-display font-extrabold text-base sm:text-lg text-slate-800 line-clamp-2 min-h-12 leading-snug group-hover:text-indigo-600 transition-colors duration-300">
                               {pred.institute.shortName}
                             </h4>
 
-                            <div className="flex items-center gap-2 mt-2 text-xs font-semibold text-slate-500">
-                              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span>
-                                {pred.institute.location} • {pred.institute.type}
-                              </span>
+                            {/* Location */}
+                            <div className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-slate-500">
+                              <Building2 className="w-3.5 h-3.5 text-indigo-500/80 shrink-0" />
+                              <span>{pred.institute.location}</span>
                             </div>
 
-                            <div className="flex items-center gap-2 mt-2 bg-slate-50 border border-slate-100/50 p-2.5 rounded-xl">
-                              <BookOpen className="w-4 h-4 text-indigo-500 shrink-0" />
-                              <span className="text-xs font-bold text-slate-700">
-                                {pred.branch.fullName}
-                              </span>
+                            {/* Branch Section */}
+                            <div className="flex items-center gap-3 mt-4 bg-gradient-to-r from-indigo-50/50 to-purple-50/20 border-l-4 border-indigo-500 p-3 rounded-r-2xl shadow-sm">
+                              <div className="w-8 h-8 rounded-xl bg-white border border-indigo-100/50 flex items-center justify-center text-indigo-600 shrink-0 shadow-sm">
+                                <BookOpen className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <span className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-widest">
+                                  Course / Branch
+                                </span>
+                                <span className="text-xs font-extrabold text-slate-700 truncate block">
+                                  {pred.branch.fullName}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-slate-50">
-                            <div className="bg-slate-50/50 rounded-xl p-2 text-center border border-slate-100">
-                              <span className="block text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                          {/* Ranks Visual Widgets */}
+                          <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-100/80">
+                            <div className="bg-gradient-to-b from-slate-50 to-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm hover:border-indigo-100/60 transition-all duration-300">
+                              <span className="block text-[8px] text-slate-400 uppercase tracking-widest font-extrabold mb-1">
                                 Opening Rank
                               </span>
-                              <span className="text-sm font-extrabold text-slate-700">
+                              <span className="text-base font-black text-slate-700 group-hover:text-indigo-600 transition-colors">
                                 {pred.openingRank}
                               </span>
                             </div>
-                            <div className="bg-slate-50/50 rounded-xl p-2 text-center border border-slate-100">
-                              <span className="block text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                            <div className="bg-gradient-to-b from-indigo-50/30 to-white rounded-2xl p-3 text-center border border-indigo-100/40 shadow-sm hover:border-indigo-200 transition-all duration-300">
+                              <span className="block text-[8px] text-indigo-500 uppercase tracking-widest font-extrabold mb-1">
                                 Closing Rank
                               </span>
-                              <span className="text-sm font-extrabold text-slate-700">
+                              <span className="text-base font-black text-indigo-600">
                                 {pred.closingRank}
                               </span>
                             </div>

@@ -58,7 +58,12 @@ function inferLocation(name: string): string {
 
 function inferType(name: string): string {
   const nameUpper = name.toUpperCase();
-  if (nameUpper.includes("PRIVATE") || nameUpper.includes("SELF-FINANCE") || nameUpper.includes("SF")) {
+  if (
+    nameUpper.includes("PRIVATE") ||
+    nameUpper.includes("SELF-FINANCE") ||
+    nameUpper.includes("SELF FINANCE") ||
+    nameUpper.includes("SF")
+  ) {
     return "Self-Finance";
   }
   return "Government";
