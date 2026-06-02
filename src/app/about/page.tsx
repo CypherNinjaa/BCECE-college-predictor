@@ -41,7 +41,7 @@ export default function AboutPage() {
             How Predictions are Calculated
           </h2>
           <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-            Our prediction algorithm compares your 2026 BCECE entrance rank (PCM/PCB) against historical Round-1 allotment cutoffs (opening and closing ranks) from 2025:
+            Our prediction algorithm compares your 2026 BCECE entrance rank (PCM/PCB) against historical Round-1 and Round-2 allotment cutoffs (opening and closing ranks) from 2025:
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-semibold">

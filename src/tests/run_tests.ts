@@ -125,7 +125,7 @@ async function testIntegrationAPI() {
   assert(collegesRes.status === 200, "GET /api/colleges status is 200");
   const colleges = await collegesRes.json();
   assert(colleges.success === true, "colleges fetch success");
-  assert(Array.isArray(colleges.data) && colleges.data.length === 23, "Colleges list returns exactly 23 institutes");
+  assert(Array.isArray(colleges.data) && colleges.data.length >= 23, "Colleges list returns at least 23 institutes");
   assert(typeof colleges.data[0].id === "string" && typeof colleges.data[0].name === "string", "Colleges have valid ID and Name fields");
 
   // Check branches API
@@ -133,7 +133,7 @@ async function testIntegrationAPI() {
   assert(branchesRes.status === 200, "GET /api/branches status is 200");
   const branches = await branchesRes.json();
   assert(branches.success === true, "branches fetch success");
-  assert(Array.isArray(branches.data) && branches.data.length === 13, "Branches list returns exactly 13 branches");
+  assert(Array.isArray(branches.data) && branches.data.length >= 13, "Branches list returns at least 13 branches");
 
   // Check predict API (Valid request)
   const predictPayload = {

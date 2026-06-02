@@ -52,10 +52,8 @@ export async function POST(request: NextRequest) {
       seatType: { in: ["GENERAL SEAT", "FEMALE SEAT"] },
     };
 
-    // Base group restrictions
-    if (subGroup === "PCMB") {
-      // PCMB students compete in both PCM and PCB groups without restriction
-    } else if (rankType === "PCM") {
+    // Restrict based on rankType (PCM rank is compared to PCM/joint-PCM cutoffs, PCB to PCB)
+    if (rankType === "PCM") {
       whereClause.OR = [
         { allotmentGroup: "PCM" },
         {
@@ -67,20 +65,6 @@ export async function POST(request: NextRequest) {
       ];
     } else {
       whereClause.allotmentGroup = "PCB";
-    }
-
-    // Filter by subgroup if provided
-    if (subGroup && subGroup !== "PCMB") {
-      if (subGroup === "PCM") {
-        whereClause.branch = {
-          name: { in: pcmEligibleBranches }
-        };
-      } else if (subGroup === "PCB") {
-        if (whereClause.OR) {
-          delete whereClause.OR;
-        }
-        whereClause.allotmentGroup = "PCB";
-      }
     }
 
     // Filter by specific branches/institutes if provided
@@ -171,6 +155,7 @@ export async function POST(request: NextRequest) {
           seatType: cutoff.seatType,
           chanceLevel,
           chancePercentage,
+          round: cutoff.round,
         };
       })
       .filter((p) => p !== null);
@@ -184,7 +169,7 @@ export async function POST(request: NextRequest) {
     });
 
     const disclaimer =
-      "Predictions are based on BCECE 2025 Round-1 allotment data. Actual 2026 cutoffs may vary based on number of applicants, seat changes, reservation policy updates, and other factors. Use this tool for guidance only — it does not guarantee admission.";
+      "Predictions are based on BCECE 2025 Round-1 and Round-2 allotment/cutoff data. Actual 2026 cutoffs may vary based on applicants, seat changes, reservation updates, and other factors. Use this tool for guidance only — it does not guarantee admission.";
 
     return NextResponse.json({
       success: true,

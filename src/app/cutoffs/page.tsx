@@ -14,6 +14,7 @@ interface CutoffRow {
   openingRank: number;
   closingRank: number;
   totalSeats: number;
+  round: number;
   institute: {
     id: string;
     name: string;

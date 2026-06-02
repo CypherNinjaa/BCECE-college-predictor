@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const predictRequestSchema = z.object({
   subGroup: z.enum(["PCM", "PCB", "PCMB"]).optional(),
-  category: z.enum(["UR", "BC", "EBC", "SC", "ST"]),
+  category: z.enum(["UR", "BC", "EBC", "SC", "ST", "EWS"]),
   rankType: z.enum(["PCM", "PCB"]),
   rankSubCategory: z.enum(["UR", "CAT", "RCG", "DQ", "SMQ"]),
   rankValue: z.coerce.number().int().positive(),

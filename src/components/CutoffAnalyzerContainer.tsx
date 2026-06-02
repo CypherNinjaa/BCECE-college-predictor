@@ -11,6 +11,7 @@ interface CutoffRow {
   openingRank: number;
   closingRank: number;
   totalSeats: number;
+  round: number;
   institute: {
     id: string;
     name: string;
@@ -40,6 +41,7 @@ export function CutoffAnalyzerContainer({
   const [selectedBranch, setSelectedBranch] = useState("ALL");
   const [selectedGroup, setSelectedGroup] = useState("ALL");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedRound, setSelectedRound] = useState("ALL");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
@@ -57,8 +59,9 @@ export function CutoffAnalyzerContainer({
     const matchesBranch = selectedBranch === "ALL" || c.branch.id === selectedBranch;
     const matchesGroup = selectedGroup === "ALL" || c.allotmentGroup === selectedGroup;
     const matchesCategory = selectedCategory === "ALL" || c.allottedCat === selectedCategory;
+    const matchesRound = selectedRound === "ALL" || String(c.round) === selectedRound;
 
-    return matchesSearch && matchesCollege && matchesBranch && matchesGroup && matchesCategory;
+    return matchesSearch && matchesCollege && matchesBranch && matchesGroup && matchesCategory && matchesRound;
   });
 
   const totalPages = Math.ceil(filteredCutoffs.length / itemsPerPage);
@@ -108,9 +111,9 @@ export function CutoffAnalyzerContainer({
           <h2 className="text-sm font-bold">Configure Cutoff Analyzer Filters</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3">
           {/* Text Search */}
-          <div className="md:col-span-2 relative flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs">
+          <div className="sm:col-span-2 relative flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs">
             <Search className="w-3.5 h-3.5 text-slate-400 shrink-0 mr-2" />
             <input
               type="text"
@@ -172,6 +175,20 @@ export function CutoffAnalyzerContainer({
             <option value="PCB">PCB Group</option>
           </select>
 
+          {/* Round Filter */}
+          <select
+            value={selectedRound}
+            onChange={(e) => {
+              setSelectedRound(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-white border border-slate-200 text-slate-750 py-2.5 px-3.5 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+          >
+            <option value="ALL">All Rounds</option>
+            <option value="1">Round 1</option>
+            <option value="2">Round 2</option>
+          </select>
+
           {/* Category Filter */}
           <select
             value={selectedCategory}
@@ -229,6 +246,7 @@ export function CutoffAnalyzerContainer({
                 <th className="py-4 px-6">College Info</th>
                 <th className="py-4 px-6">Branch Name</th>
                 <th className="py-4 px-6 text-center">Group</th>
+                <th className="py-4 px-6 text-center">Round</th>
                 <th className="py-4 px-6 text-center">Allotted Cat</th>
                 <th className="py-4 px-6 text-center">Seat Type</th>
                 <th className="py-4 px-6 text-center">Opening Rank</th>
@@ -264,6 +282,10 @@ export function CutoffAnalyzerContainer({
                     <span className="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100/50 uppercase">
                       {c.allotmentGroup}
                     </span>
+                  </td>
+                  {/* Round */}
+                  <td className="py-4 px-6 text-center font-bold text-slate-500 text-xs">
+                    Round {c.round}
                   </td>
                   {/* Category */}
                   <td className="py-4 px-6 text-center">

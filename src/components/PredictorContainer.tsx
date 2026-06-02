@@ -59,6 +59,7 @@ interface PredictionResult {
   seatType: string;
   chanceLevel: "HIGH" | "MODERATE" | "LOW";
   chancePercentage: number;
+  round: number;
 }
 
 interface AiRateLimitInfo {
@@ -87,7 +88,7 @@ function formatRateLimitWait(resetAt: number | null) {
 export function PredictorContainer({ colleges, branches }: PredictorContainerProps) {
   // Form State
   const [subGroup, setSubGroup] = useState<"PCM" | "PCB" | "PCMB">("PCMB");
-  const [category, setCategory] = useState<"UR" | "BC" | "EBC" | "SC" | "ST">("UR");
+  const [category, setCategory] = useState<"UR" | "BC" | "EBC" | "SC" | "ST" | "EWS">("UR");
   const [rankValue, setRankValue] = useState<string>("");
   const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   const [selectedColleges, setSelectedColleges] = useState<string[]>([]);
@@ -116,6 +117,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
   const [apiDataReady, setApiDataReady] = useState(false);
   const [waitingForApi, setWaitingForApi] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [resultsRoundTab, setResultsRoundTab] = useState<number>(1);
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -159,6 +161,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
     const activePredictions = predictions.filter((p) => {
       if (category !== "UR" && p.allottedCategory !== category) return false;
       if (collegeTypeFilter !== "ALL" && p.institute.type !== collegeTypeFilter) return false;
+      if (p.round !== resultsRoundTab) return false;
       return true;
     });
 
@@ -210,7 +213,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `SWR_BCECE_Predictions_${subGroup}_Rank_${rankValue}_${category}.csv`);
+    link.setAttribute("download", `SWR_BCECE_Predictions_${subGroup}_Rank_${rankValue}_${category}_Round_${resultsRoundTab}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -222,6 +225,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
     const activePredictions = predictions.filter((p) => {
       if (category !== "UR" && p.allottedCategory !== category) return false;
       if (collegeTypeFilter !== "ALL" && p.institute.type !== collegeTypeFilter) return false;
+      if (p.round !== resultsRoundTab) return false;
       return true;
     });
 
@@ -405,6 +409,7 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
             <div class="meta-item"><strong>Academic Group:</strong> ${subGroup} (${rankType})</div>
             <div class="meta-item"><strong>Entered Rank:</strong> ${rankValue}</div>
             <div class="meta-item"><strong>Social Category:</strong> ${category} (${category === "UR" ? "Unreserved" : "Reserved"})</div>
+            <div class="meta-item"><strong>Round:</strong> Round ${resultsRoundTab}</div>
             <div class="meta-item"><strong>Matching Options:</strong> ${activePredictions.length} colleges found</div>
           </div>
 
@@ -622,6 +627,24 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
         const fetchedPredictions = resData.data.predictions;
         setPredictions(fetchedPredictions);
 
+        // Auto-select round with predictions
+        const r1Count = fetchedPredictions.filter((p: any) => {
+          if (category !== "UR" && p.allottedCategory !== category) return false;
+          if (collegeTypeFilter !== "ALL" && p.institute.type !== collegeTypeFilter) return false;
+          return p.round === 1;
+        }).length;
+        const r2Count = fetchedPredictions.filter((p: any) => {
+          if (category !== "UR" && p.allottedCategory !== category) return false;
+          if (collegeTypeFilter !== "ALL" && p.institute.type !== collegeTypeFilter) return false;
+          return p.round === 2;
+        }).length;
+
+        if (r1Count === 0 && r2Count > 0) {
+          setResultsRoundTab(2);
+        } else {
+          setResultsRoundTab(1);
+        }
+
         const aiCooldownActive = aiRateLimitResetAt !== null && aiRateLimitResetAt > Date.now();
 
         if (aiMode && (aiRateLimited || aiCooldownActive)) {
@@ -708,6 +731,9 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
     return true;
   });
 
+  // Filtered Predictions for currently active Round Tab
+  const activeRoundPredictions = displayPredictions.filter((p) => p.round === resultsRoundTab);
+
   return (
     <div className="w-full">
       {/* Search / Predictor Form Card */}
@@ -766,8 +792,8 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Your Social Category
               </label>
-              <div className="grid grid-cols-5 gap-1.5 bg-slate-100/80 p-1 rounded-xl">
-                {(["UR", "BC", "EBC", "SC", "ST"] as const).map((cat) => (
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 bg-slate-100/80 p-1 rounded-xl">
+                {(["UR", "BC", "EBC", "SC", "ST", "EWS"] as const).map((cat) => (
                   <button
                     key={cat}
                     type="button"
@@ -1044,14 +1070,14 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
               className="space-y-6"
             >
             {/* Header + Result Filter */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <h3 className="font-display font-bold text-2xl text-slate-800">
                   {activeTab === "MATCHES" ? "Prediction Allotments" : "Study With Ritesh AI Guide"}
                 </h3>
                 <p className="text-slate-500 text-sm">
                   {activeTab === "MATCHES"
-                    ? `Found ${displayPredictions.length} matching college options based on your rank`
+                    ? `Found ${activeRoundPredictions.length} options in Round ${resultsRoundTab} (Total: ${displayPredictions.length} options across all rounds)`
                     : "Personalized choice-filling priorities and expert counseling tips"}
                 </p>
               </div>
@@ -1080,6 +1106,28 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                       </svg>
                       Download CSV
                     </button>
+                  </div>
+                )}
+
+                {/* Round Filter Tabs */}
+                {activeTab === "MATCHES" && (
+                  <div className="flex bg-slate-100/80 border border-slate-200/50 p-1 rounded-xl shadow-inner animate-fade-in">
+                    {[
+                      { value: 1, label: `Round 1 (${displayPredictions.filter(p => p.round === 1).length})` },
+                      { value: 2, label: `Round 2 (${displayPredictions.filter(p => p.round === 2).length})` },
+                    ].map((tab) => (
+                      <button
+                        key={tab.value}
+                        onClick={() => setResultsRoundTab(tab.value)}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                          resultsRoundTab === tab.value
+                            ? "bg-white text-indigo-600 shadow-sm"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
                   </div>
                 )}
 
@@ -1174,9 +1222,22 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                       different colleges/branches.
                     </p>
                   </div>
+                ) : activeRoundPredictions.length === 0 ? (
+                  <div className="glass-panel border border-slate-200/60 rounded-3xl p-12 text-center max-w-xl mx-auto space-y-4">
+                    <AlertCircle className="w-12 h-12 text-indigo-400 mx-auto" />
+                    <h4 className="font-display font-bold text-lg text-slate-800">
+                      No Matches in Round {resultsRoundTab}
+                    </h4>
+                    <p className="text-slate-500 text-sm leading-relaxed">
+                      We didn't find any eligible options for your rank in Round {resultsRoundTab}. However, you
+                      have matching options in the other round! Click the{" "}
+                      <span className="font-bold text-indigo-600">Round {resultsRoundTab === 1 ? 2 : 1}</span> tab above
+                      to view them.
+                    </p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {displayPredictions.map((pred, index) => {
+                    {activeRoundPredictions.map((pred, index) => {
                       return (
                         <motion.div
                           key={pred.id}
@@ -1191,16 +1252,21 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
                           <div>
                             <div className="flex items-center justify-between mb-3">
                               {/* College Type Badge */}
-                              {pred.institute.type === "Government" ? (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                  Government
+                              <div className="flex items-center gap-1.5">
+                                {pred.institute.type === "Government" ? (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Government
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    Self-Finance
+                                  </span>
+                                )}
+                                <span className="text-[9px] font-extrabold text-slate-500 bg-slate-50 border border-slate-200/30 px-2 py-0.5 rounded-full uppercase">
+                                  Round {pred.round}
                                 </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-100/60 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                  Self-Finance
-                                </span>
-                              )}
+                              </div>
 
                               {/* Category Seat Badge */}
                               <span className="text-[9px] font-extrabold text-indigo-700 bg-indigo-50/80 border border-indigo-100/80 px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
