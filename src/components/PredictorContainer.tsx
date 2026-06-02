@@ -113,8 +113,28 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAnimation, setShowAnimation] = useState(false);
+  const [apiDataReady, setApiDataReady] = useState(false);
+  const [waitingForApi, setWaitingForApi] = useState(false);
 
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  // Sync state if video ended but API call was still running
+  useEffect(() => {
+    if (apiDataReady && waitingForApi) {
+      setShowAnimation(false);
+      setSearched(true);
+      setWaitingForApi(false);
+    }
+  }, [apiDataReady, waitingForApi]);
+
+  const handleAnimationComplete = useCallback(() => {
+    if (apiDataReady) {
+      setShowAnimation(false);
+      setSearched(true);
+    } else {
+      setWaitingForApi(true);
+    }
+  }, [apiDataReady]);
 
   // SWR AI Mode States
   const [aiMode, setAiMode] = useState<boolean>(false);
@@ -222,8 +242,20 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
     setLoading(true);
     setSearched(false);
     setAiResult(null);
-    setShowAnimation(false);
+    setShowAnimation(true);
+    setApiDataReady(false);
+    setWaitingForApi(false);
     setActiveTab("MATCHES");
+
+    // Scroll to results container immediately so the animation card is visible
+    setTimeout(() => {
+      if (resultsRef.current) {
+        resultsRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 50);
 
     try {
       const response = await fetch("/api/predict", {
@@ -286,28 +318,17 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
           }
         }
 
-        // Scroll to results container
-        setTimeout(() => {
-          if (resultsRef.current) {
-            resultsRef.current.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }
-        }, 100);
-
-        // Show animation
-        setTimeout(() => {
-          setShowAnimation(true);
-        }, 800);
+        setApiDataReady(true);
 
       } else {
         setError(resData.error || "Failed to fetch predictions");
         setShowAnimation(false);
+        setSearched(true);
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
       setShowAnimation(false);
+      setSearched(true);
       console.error(err);
     } finally {
       setLoading(false);
@@ -665,10 +686,8 @@ export function PredictorContainer({ colleges, branches }: PredictorContainerPro
           {showAnimation && (
             <PredictionAnimation
               showAnimation={showAnimation}
-              onAnimationComplete={() => {
-                setShowAnimation(false);
-                setSearched(true);
-              }}
+              onAnimationComplete={handleAnimationComplete}
+              apiDataReady={apiDataReady}
             />
           )}
 

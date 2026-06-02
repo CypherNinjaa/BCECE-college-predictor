@@ -5,31 +5,59 @@ import { useEffect, useRef, useState } from "react";
 interface PredictionAnimationProps {
   showAnimation: boolean;
   onAnimationComplete: () => void;
+  apiDataReady?: boolean;
 }
 
 export default function PredictionAnimation({
   showAnimation,
   onAnimationComplete,
+  apiDataReady = false,
 }: PredictionAnimationProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [videoEnded, setVideoEnded] = useState(false);
+  const completedRef = useRef(false);
+
+  // Wrapper to ensure onAnimationComplete is only called once
+  const triggerComplete = () => {
+    if (!completedRef.current) {
+      completedRef.current = true;
+      onAnimationComplete();
+    }
+  };
 
   useEffect(() => {
-    if (showAnimation && videoRef.current && isVideoLoaded) {
+    if (showAnimation && videoRef.current && isVideoLoaded && !videoEnded) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(console.error);
     }
-  }, [showAnimation, isVideoLoaded]);
+  }, [showAnimation, isVideoLoaded, videoEnded]);
+
+  useEffect(() => {
+    // Safety fallback: if video doesn't complete or load within 4.5 seconds, auto-complete
+    const timer = setTimeout(() => {
+      triggerComplete();
+    }, 4500);
+
+    return () => clearTimeout(timer);
+  }, [onAnimationComplete]);
 
   const handleVideoEnded = () => {
+    setVideoEnded(true);
     // Add a small delay before completing animation for better UX
     setTimeout(() => {
-      onAnimationComplete();
+      triggerComplete();
     }, 500);
   };
 
   const handleVideoLoaded = () => {
     setIsVideoLoaded(true);
+  };
+
+  const handleVideoError = () => {
+    console.warn("Video failed to load, falling back to instant completion.");
+    setIsVideoLoaded(true); // Treat as loaded to hide overlay
+    triggerComplete();
   };
 
   if (!showAnimation) return null;
@@ -58,6 +86,7 @@ export default function PredictionAnimation({
             ref={videoRef}
             onEnded={handleVideoEnded}
             onLoadedData={handleVideoLoaded}
+            onError={handleVideoError}
             className="max-w-md w-full h-auto object-contain rounded-2xl shadow-lg bg-gradient-to-br from-indigo-50 to-slate-50"
             muted
             playsInline
@@ -94,6 +123,13 @@ export default function PredictionAnimation({
             </div>
           )}
         </div>
+
+        {videoEnded && !apiDataReady && (
+          <div className="flex items-center justify-center gap-2 text-indigo-600 py-2 animate-pulse">
+            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-xs font-semibold">Finalizing prediction analysis...</span>
+          </div>
+        )}
 
         <div className="space-y-4 text-center">
           <div className="flex items-center justify-center space-x-3 text-base text-indigo-700 bg-indigo-50/60 rounded-xl p-4 border border-indigo-100/50">
